@@ -17,6 +17,12 @@
     "dist:win": "npm run transpile:electron && npm run transpile:ipc && npm run transpile:preload && npm run build && electron-builder --win --x64"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-dropdown-menu": "^2.1.15",
+    "@radix-ui/react-tooltip": "^1.2.7",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.539.0",
+    "motion": "^12.23.12",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.7.1"

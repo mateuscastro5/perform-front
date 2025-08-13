@@ -1,8 +1,10 @@
+import { motion } from 'motion/react';
 import UserProfileCard from '../components/dashboard/UserProfileCard';
-import MetricCard from '../components/dashboard/MetricCard';
+import { MetricCard } from '../components/ui/MetricCard';
 import TeamActivityPanel from '../components/dashboard/CommitsPanel';
 import ImpactChart from '../components/dashboard/ProductivityChart';
 import PRsPanel from '../components/dashboard/PRsPanel';
+import { animations } from '../lib/design-system';
 
 const Dashboard = () => {
   const handleMetricClick = (metric: string) => {
@@ -11,10 +13,20 @@ const Dashboard = () => {
 
   return (
     <div className="flex-1 p-6 overflow-auto scroll-container">
-      <div className="mb-8">
+      <motion.div 
+        className="mb-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <UserProfileCard />
 
-        <div className="grid grid-cols-4 gap-6">
+        <motion.div 
+          className="grid grid-cols-4 gap-6"
+          variants={animations.staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
           <MetricCard
             value={47}
             label="Commits this week"
@@ -43,18 +55,23 @@ const Dashboard = () => {
             color="purple"
             onClick={() => handleMetricClick('uptime')}
           />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="space-y-6">
+      <motion.div 
+        className="grid grid-cols-3 gap-6 h-[500px] mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        <div className="flex flex-col gap-4 h-full">
           <TeamActivityPanel />
           <ImpactChart />
         </div>
         <div className="col-span-2">
           <PRsPanel />
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
