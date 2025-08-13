@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { motion } from "motion/react";
+import { GitPullRequest, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "../ui/base-components";
+import { animations } from "../../lib/design-system";
 import PRCard, { PRStatus } from './PRCard';
 
 interface PRData {
@@ -21,8 +24,8 @@ interface PRData {
 }
 
 const PRsPanel = () => {
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+  const currentPage = 1;
 
   // Mock data - simulating 20 PRs
   const mockPRs: PRData[] = [
@@ -153,32 +156,39 @@ const PRsPanel = () => {
 
   return (
     <div className="w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-            <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
+      <motion.div {...animations.slideUp} className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-blue-500/20 rounded-lg flex items-center justify-center">
+            <GitPullRequest className="w-3.5 h-3.5 text-blue-400" />
           </div>
-          <h2 className="text-xl font-semibold text-white">Recent Pull Requests</h2>
+          <h2 className="text-lg font-semibold leading-tight">Recent Pull Requests</h2>
         </div>
         
         <div className="text-sm text-gray-400">
           {allPRs.length} total PRs
         </div>
-      </div>
+      </motion.div>
 
-      {/* Grid de PRs */}
-      <div className="space-y-3 mb-6">
-        {currentPRs.map((pr) => (
-          <PRCard
+      <motion.div 
+        className="space-y-3 mb-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ staggerChildren: 0.1 }}
+      >
+        {currentPRs.map((pr, index) => (
+          <motion.div
             key={pr.id}
-            {...pr}
-            onClick={() => handlePRClick(pr)}
-          />
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <PRCard
+              {...pr}
+              onClick={() => handlePRClick(pr)}
+            />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <div className="flex items-center justify-between pt-4 border-t border-slate-700/30">
         <div className="text-sm text-gray-400">
@@ -186,37 +196,41 @@ const PRsPanel = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage((prev: number) => Math.max(1, prev - 1))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {/* setCurrentPage previous */}}
             disabled={currentPage === 1}
-            className="px-3 py-1 text-sm text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="gap-1"
           >
-            ← Previous
-          </button>
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </Button>
           
           <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((page) => (
+              <Button
                 key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 text-sm rounded-md transition-colors ${
-                  page === currentPage
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
-                }`}
+                variant={page === currentPage ? "default" : "ghost"}
+                size="sm"
+                onClick={() => {/* setCurrentPage(page) */}}
+                className="w-8 h-8 p-0"
               >
                 {page}
-              </button>
+              </Button>
             ))}
           </div>
           
-          <button
-            onClick={() => setCurrentPage((prev: number) => Math.min(totalPages, prev + 1))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {/* setCurrentPage next */}}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 text-sm text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="gap-1"
           >
-            Next →
-          </button>
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </div>

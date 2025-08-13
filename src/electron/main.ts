@@ -50,6 +50,7 @@ app.on("ready", () => {
 
     if (isDev()) {
         mainWindow.loadURL('http://localhost:5123');
+        mainWindow.webContents.openDevTools();
     } else {
         mainWindow.loadFile(path.join(__dirname, '../dist-react/index.html'));
     }

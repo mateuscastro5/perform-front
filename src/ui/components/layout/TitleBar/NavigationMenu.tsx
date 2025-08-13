@@ -1,4 +1,5 @@
-import React from 'react';
+import { Button } from '../../ui/base-components';
+import { cn } from '../../../lib/design-system';
 
 interface NavigationMenuProps {
   activeTab?: string;
@@ -17,19 +18,22 @@ const NavigationMenu = ({
   ];
 
   return (
-    <nav className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' }}>
+    <nav className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' } as never}>
       {menuItems.map((item) => (
-        <button
+        <Button
           key={item.id}
+          variant="ghost"
+          size="sm"
           onClick={() => onTabChange?.(item.id)}
-          className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${
+          className={cn(
+            'text-sm font-medium px-4 py-2 transition-colors',
             item.id === activeTab.toLowerCase()
               ? 'text-blue-400 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
-          }`}
+              : 'text-slate-400 hover:text-white hover:bg-slate-700/30'
+          )}
         >
           {item.label}
-        </button>
+        </Button>
       ))}
     </nav>
   );

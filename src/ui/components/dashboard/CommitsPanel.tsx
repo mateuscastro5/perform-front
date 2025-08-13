@@ -1,3 +1,10 @@
+import { motion } from "motion/react";
+import { Users, Zap } from "lucide-react";
+import { Card } from "../ui/base-components";
+import { Avatar } from "../ui/base-components";
+import { Badge } from "../ui/base-components";
+import { animations } from "../../lib/design-system";
+
 interface TeamMember {
   name: string;
   avatar?: string;
@@ -57,50 +64,63 @@ const TeamActivityPanel = ({
     }
   };
 
+  const codingMembers = members.filter(m => m.status === 'coding').length;
+
   return (
-    <div className="card hover:shadow-2xl transition-all duration-300">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-          <span className="text-blue-400 text-sm">�</span>
-        </div>
-        <h2 className="text-xl font-semibold text-white">Team Activity</h2>
-        <div className="ml-auto">
-          <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">
-            {members.filter(m => m.status === 'coding').length} coding
-          </span>
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        {members.map((member, i) => (
-          <div key={i} className="flex items-center gap-3 p-4 bg-slate-800/30 hover:bg-slate-700/40 rounded-xl transition-all duration-200 border border-slate-700/30 group">
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform duration-200">
-                {member.name.split(' ').map(n => n[0]).join('')}
-              </div>
-              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-800 ${getStatusColor(member.status)} animate-pulse`} />
+    <Card className="flex-1" animated={false}>
+      <motion.div {...animations.slideUp} className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-blue-500/20 rounded-lg flex items-center justify-center">
+              <Users className="w-3.5 h-3.5 text-blue-400" />
             </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-white font-medium truncate">{member.name}</p>
-                <span className="text-xs">{getStatusIcon(member.status)}</span>
-              </div>
-              {member.currentTask && (
-                <p className="text-xs text-gray-300 truncate mt-1">{member.currentTask}</p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">{member.lastActivity}</p>
-            </div>
+            <h2 className="text-base font-semibold leading-tight">Team Activity</h2>
           </div>
-        ))}
-      </div>
-      
-      <div className="mt-4 pt-4 border-t border-slate-700/30">
-        <button className="w-full text-center text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200">
-          View all team members →
-        </button>
-      </div>
-    </div>
+          
+          <Badge variant="green" className="gap-1">
+            <Zap className="w-3 h-3" />
+            {codingMembers} coding
+          </Badge>
+        </div>
+        
+        <div className="flex-1 space-y-2">
+          {members.map((member, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/30"
+            >
+              <div className="relative">
+                <Avatar
+                  name={member.name.split(' ').map(n => n[0]).join('')}
+                  size="sm"
+                />
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-800 ${getStatusColor(member.status)} animate-pulse`} />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium truncate">{member.name}</p>
+                  <span className="text-xs">{getStatusIcon(member.status)}</span>
+                </div>
+                {member.currentTask && (
+                  <p className="text-xs text-gray-300 truncate mt-0.5">{member.currentTask}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-0.5">{member.lastActivity}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+        
+        <div className="mt-4 pt-3 border-t border-slate-700/30">
+          <button className="w-full text-center text-xs text-blue-400 hover:text-blue-300 transition-colors">
+            View all team members →
+          </button>
+        </div>
+      </motion.div>
+    </Card>
   );
 };
 
