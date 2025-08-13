@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import "./scrollbar.css";
+
+@theme {
+  --color-alpha-bg: #0e1015;
+  --color-alpha-surface: #13151b;
+  --color-alpha-surface-hover: #1a1c23;
+  
+  --color-alpha-border: #2a3441;
+  --color-alpha-border-accent: #3d4b5c;
+  
+  --color-alpha-text-primary: #ffffff;
+  --color-alpha-text-secondary: #c4d1e1;
+  --color-alpha-text-muted: #8a9bb8;
+  
+  --color-alpha-accent-blue: #1e40af;
+  --color-alpha-accent-gold: #f59e0b;
+  --color-alpha-accent-green: #10b981;
+  --color-alpha-accent-red: #ef4444;
+}
+
+body {
+  background: #0e1015;
+  color: var(--color-alpha-text-primary);
+  min-height: 100vh;
+}
+
+.card {
+  @apply bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6;
+  background: linear-gradient(145deg, #13151b, #1a1c23);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.metric-card {
+  @apply bg-slate-800/40 backdrop-blur-sm border border-slate-700/30 rounded-lg p-4 text-center;
+  background: linear-gradient(135deg, #13151b, #1a1c23);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  background: linear-gradient(135deg, #1a1c23, #21232a);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}

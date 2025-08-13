@@ -1,0 +1,32 @@
+{
+    "appId": "com.alphasights.insights",
+    "productName": "alphaSights Insights",
+    "description": "Desktop application for data analysis and insights from alphaSights",
+    "author": "alphaSights",
+    "copyright": "Copyright © 2025 alphaSights",
+    "files": ["dist-electron", "dist-react"],
+    "directories": {
+        "output": "dist"
+    },
+    "icon": "./icon.png",
+    "mac": {
+        "target": "dmg",
+        "icon": "./icon.png",
+        "category": "public.app-category.business"
+    },
+    "linux": {
+        "target": "AppImage",
+        "category": "Office",
+        "icon": "./icon.png"
+    },
+    "win": {
+        "target": ["portable", "msi"],
+        "icon": "./icon.png"
+    },
+    "portable": {
+        "artifactName": "alphaSights-Insights-${version}-portable.exe"
+    },
+    "msi": {
+        "artifactName": "alphaSights-Insights-${version}-setup.msi"
+    }
+}
