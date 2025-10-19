@@ -1,6 +1,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DashboardProvider } from './contexts/DashboardContext';
 import TitleBar from './components/layout/TitleBar';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -27,13 +28,15 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <div className="h-screen flex flex-col">
-              <div className="hover-zone" />
-              <TitleBar />
-              <div className="flex-1 flex overflow-hidden scroll-container">
-                <Dashboard />
+            <DashboardProvider>
+              <div className="h-screen flex flex-col">
+                <div className="hover-zone" />
+                <TitleBar />
+                <div className="flex-1 flex overflow-hidden scroll-container">
+                  <Dashboard />
+                </div>
               </div>
-            </div>
+            </DashboardProvider>
           </ProtectedRoute>
         }
       />

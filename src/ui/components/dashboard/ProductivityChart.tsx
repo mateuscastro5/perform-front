@@ -21,29 +21,14 @@ interface ImpactChartProps {
 }
 
 const ImpactChart = ({ 
-  data = [
-    { day: 'Mon', commits: 5, prsMerged: 2, deploysToProduction: 1, codeReviews: 3 },
-    { day: 'Tue', commits: 3, prsMerged: 1, deploysToProduction: 0, codeReviews: 4 },
-    { day: 'Wed', commits: 8, prsMerged: 3, deploysToProduction: 2, codeReviews: 2 },
-    { day: 'Thu', commits: 4, prsMerged: 2, deploysToProduction: 1, codeReviews: 5 },
-    { day: 'Fri', commits: 6, prsMerged: 4, deploysToProduction: 3, codeReviews: 1 },
-    { day: 'Sat', commits: 2, prsMerged: 1, deploysToProduction: 0, codeReviews: 2 },
-    { day: 'Sun', commits: 1, prsMerged: 0, deploysToProduction: 0, codeReviews: 1 }
-  ],
-  teamMembers = [
-    { id: 'all', name: 'All Team' },
-    { id: 'alex', name: 'Alex Rivera' },
-    { id: 'sarah', name: 'Sarah Chen' },
-    { id: 'marcus', name: 'Marcus Johnson' },
-    { id: 'emma', name: 'Emma Davis' }
-  ],
+  data = [],
+  teamMembers = [],
   title = "Weekly Impact"
 }: ImpactChartProps) => {
   
   const [selectedMember, setSelectedMember] = useState('all');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       if (isDropdownOpen) {
@@ -55,7 +40,6 @@ const ImpactChart = ({
     return () => document.removeEventListener('click', handleClickOutside);
   }, [isDropdownOpen]);
   
-  // For now, showing PRs merged by default
   const selectedMetric = 'prsMerged';
   
   const currentMetric = {
@@ -64,15 +48,15 @@ const ImpactChart = ({
     icon: '�'
   };
 
-  const maxValue = Math.max(...data.map(d => d.prsMerged));
+  const maxValue = data.length > 0 ? Math.max(...data.map(d => d.prsMerged)) : 0;
   const totalValue = data.reduce((sum, d) => sum + d.prsMerged, 0);
   
   const svgHeight = 120;
   const svgWidth = 280;
   const padding = 20;
   
-  // Generate path for the line chart
   const generatePath = () => {
+    if (data.length === 0) return '';
     const points = data.map((point, index) => {
       const x = padding + (index * (svgWidth - 2 * padding)) / (data.length - 1);
       const y = svgHeight - padding - ((point.prsMerged / Math.max(maxValue, 1)) * (svgHeight - 2 * padding));
@@ -81,8 +65,8 @@ const ImpactChart = ({
     return `M ${points.join(' L ')}`;
   };
 
-  // Generate points for circles
   const generatePoints = () => {
+    if (data.length === 0) return [];
     return data.map((point, index) => {
       const x = padding + (index * (svgWidth - 2 * padding)) / (data.length - 1);
       const y = svgHeight - padding - ((point.prsMerged / Math.max(maxValue, 1)) * (svgHeight - 2 * padding));
@@ -91,6 +75,22 @@ const ImpactChart = ({
   };
 
   const points = generatePoints();
+  
+  if (data.length === 0) {
+    return (
+      <div className="card hover:shadow-2xl transition-all duration-300">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+            <span className="text-green-400 text-sm">📊</span>
+          </div>
+          <h3 className="text-lg font-semibold text-white">{title}</h3>
+        </div>
+        <div className="text-center py-12 text-alpha-text-muted">
+          <p>No productivity data available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="card hover:shadow-2xl transition-all duration-300">
