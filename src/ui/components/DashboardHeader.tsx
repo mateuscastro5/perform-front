@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Bell, Settings, Minus, Square, X, User, LogOut } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
@@ -21,6 +22,7 @@ interface DashboardHeaderProps {
 export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps) => {
   const [isMaximized, setIsMaximized] = useState(false);
   const { logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -61,6 +63,15 @@ export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps
       } catch (error) {
         console.error('Error closing:', error);
       }
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    onTabChange(value);
+    if (value === "home") {
+      navigate("/");
+    } else if (value === "developers") {
+      navigate("/developers");
     }
   };
 
@@ -113,7 +124,7 @@ export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps
           </div>
 
           {/* Navigation Tabs */}
-          <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 max-w-md mx-8">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 max-w-md mx-8">
             <TabsList className="w-full bg-muted/30">
               <TabsTrigger value="home" className="flex-1">Home</TabsTrigger>
               <TabsTrigger value="squads" className="flex-1">Squads</TabsTrigger>
