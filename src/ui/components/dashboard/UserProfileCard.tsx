@@ -1,3 +1,7 @@
+import { Avatar, AvatarFallback } from '@/ui/components/ui/avatar';
+import { Badge } from '@/ui/components/ui/badge';
+import { Card, CardContent } from '@/ui/components/ui/card';
+
 interface UserProfileCardProps {
   userName?: string;
   userRole?: string;
@@ -17,22 +21,31 @@ const UserProfileCard = ({
     displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <div className="flex items-center gap-4 mb-6">
-      <div className="w-20 h-20 bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 rounded-full flex items-center justify-center ring-4 ring-blue-500/20">
-        <span className="text-white text-2xl font-bold">{displayInitials}</span>
-      </div>
-      
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-1">{displayName}</h1>
-        <div className="flex items-center gap-3">
-          <span className="text-blue-300 font-medium capitalize">{displayRole}</span>
-          {userTag && (
-            <span className="text-gray-400 text-sm bg-slate-800/50 px-2 py-1 rounded">{userTag}</span>
-          )}
+    <Card className="mb-6 backdrop-blur-sm bg-card/50 shadow-glow-green hover:shadow-glow-green transition-all duration-300">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-4">
+          <Avatar className="w-20 h-20 ring-4 ring-primary/20 shadow-glow-green">
+            <AvatarFallback className="bg-gradient-to-br from-primary via-primary/90 to-secondary text-primary-foreground text-2xl font-bold">
+              {displayInitials}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-foreground mb-2">{displayName}</h1>
+            <div className="flex items-center gap-3">
+              <span className="text-primary font-medium capitalize">{displayRole}</span>
+              {userTag && (
+                <Badge variant="outline" className="text-xs">
+                  {userTag}
+                </Badge>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
 export default UserProfileCard;
+
