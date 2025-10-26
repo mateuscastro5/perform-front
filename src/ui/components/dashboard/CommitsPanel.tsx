@@ -1,3 +1,11 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/components/ui/card';
+import { Avatar, AvatarFallback } from '@/ui/components/ui/avatar';
+import { Badge } from '@/ui/components/ui/badge';
+import { Button } from '@/ui/components/ui/button';
+import { Separator } from '@/ui/components/ui/separator';
+import { Users, Zap, MessageSquare, Moon } from 'lucide-react';
+import { cn } from '@/ui/lib/utils';
+
 interface TeamMember {
   name: string;
   avatar?: string;
@@ -12,81 +20,109 @@ interface TeamActivityPanelProps {
 
 const TeamActivityPanel = ({ members = [] }: TeamActivityPanelProps) => {
   
-  const getStatusColor = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'coding': return 'bg-green-500 shadow-green-500/30';
-      case 'active': return 'bg-blue-500 shadow-blue-500/30';
-      case 'away': return 'bg-gray-500 shadow-gray-500/30';
-      default: return 'bg-gray-500 shadow-gray-500/30';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'coding': return '⚡';
-      case 'active': return '💬';
-      case 'away': return '💤';
-      default: return '👤';
+      case 'coding': 
+        return {
+          color: 'bg-success shadow-glow-green',
+          icon: <Zap className="w-3 h-3" />,
+          variant: 'success' as const
+        };
+      case 'active': 
+        return {
+          color: 'bg-accent shadow-[0_0_20px_hsl(200_100%_64%_/_0.3)]',
+          icon: <MessageSquare className="w-3 h-3" />,
+          variant: 'default' as const
+        };
+      case 'away': 
+        return {
+          color: 'bg-muted',
+          icon: <Moon className="w-3 h-3" />,
+          variant: 'secondary' as const
+        };
+      default: 
+        return {
+          color: 'bg-muted',
+          icon: <Users className="w-3 h-3" />,
+          variant: 'secondary' as const
+        };
     }
   };
 
   const codingCount = members.filter(m => m.status === 'coding').length;
 
   return (
-    <div className="card hover:shadow-2xl transition-all duration-300">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-          <span className="text-blue-400 text-sm">👥</span>
-        </div>
-        <h2 className="text-xl font-semibold text-white">Team Activity</h2>
-        {codingCount > 0 && (
-          <div className="ml-auto">
-            <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">
+    <Card className="backdrop-blur-sm bg-card/50 hover:shadow-glow-green transition-all duration-300">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+            <CardTitle>Team Activity</CardTitle>
+          </div>
+          {codingCount > 0 && (
+            <Badge variant="success">
               {codingCount} coding
-            </span>
-          </div>
-        )}
-      </div>
-      
-      {members.length === 0 ? (
-        <div className="text-center py-8 text-alpha-text-muted">
-          <p>No team activity data available</p>
+            </Badge>
+          )}
         </div>
-      ) : (
-        <>
-          <div className="space-y-3">
-            {members.map((member, i) => (
-              <div key={i} className="flex items-center gap-3 p-4 bg-slate-800/30 hover:bg-slate-700/40 rounded-xl transition-all duration-200 border border-slate-700/30 group">
-                <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform duration-200">
-                    {member.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-800 ${getStatusColor(member.status)} animate-pulse`} />
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-white font-medium truncate">{member.name}</p>
-                    <span className="text-xs">{getStatusIcon(member.status)}</span>
-                  </div>
-                  {member.currentTask && (
-                    <p className="text-xs text-gray-300 truncate mt-1">{member.currentTask}</p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">{member.lastActivity}</p>
-                </div>
-              </div>
-            ))}
+      </CardHeader>
+      
+      <CardContent>
+        {members.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No team activity data available</p>
           </div>
-          
-          <div className="mt-4 pt-4 border-t border-slate-700/30">
-            <button className="w-full text-center text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200">
+        ) : (
+          <>
+            <div className="space-y-3">
+              {members.map((member, i) => {
+                const statusConfig = getStatusConfig(member.status);
+                return (
+                  <div 
+                    key={i} 
+                    className="flex items-center gap-3 p-4 bg-muted/20 hover:bg-muted/40 rounded-lg transition-all duration-200 border border-border/50 group"
+                  >
+                    <div className="relative">
+                      <Avatar className="w-10 h-10 group-hover:scale-110 transition-transform duration-200">
+                        <AvatarFallback className="bg-gradient-to-br from-primary via-primary/90 to-secondary text-primary-foreground font-bold text-sm">
+                          {member.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className={cn(
+                        "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-card flex items-center justify-center animate-pulse",
+                        statusConfig.color
+                      )}>
+                        {statusConfig.icon}
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-foreground font-medium truncate">{member.name}</p>
+                      </div>
+                      {member.currentTask && (
+                        <p className="text-xs text-muted-foreground truncate mt-1">{member.currentTask}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground/70 mt-1">{member.lastActivity}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <Separator className="my-4" />
+            
+            <Button variant="ghost" className="w-full">
               View all team members →
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+            </Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
 export default TeamActivityPanel;
+
