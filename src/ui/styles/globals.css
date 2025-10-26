@@ -1,27 +1,88 @@
-@import "tailwindcss";
 @import "./scrollbar.css";
 
-:root {
-  --color-alpha-bg: #0e1015;
-  --color-alpha-surface: #13151b;
-  --color-alpha-surface-hover: #1a1c23;
-  
-  --color-alpha-border: #2a3441;
-  --color-alpha-border-accent: #3d4b5c;
-  
-  --color-alpha-text-primary: #ffffff;
-  --color-alpha-text-secondary: #c4d1e1;
-  --color-alpha-text-muted: #8a9bb8;
-  
-  --color-alpha-accent-blue: #1e40af;
-  --color-alpha-accent-gold: #f59e0b;
-  --color-alpha-accent-green: #10b981;
-  --color-alpha-accent-red: #ef4444;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Dark tech background */
+    --background: 225 18% 9%;
+    --foreground: 210 40% 98%;
+
+    /* Card backgrounds with glassmorphism */
+    --card: 224 15% 13%;
+    --card-foreground: 210 40% 98%;
+
+    /* Popover */
+    --popover: 224 15% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary - Neon Green */
+    --primary: 120 100% 56%;
+    --primary-foreground: 225 18% 9%;
+
+    /* Secondary - Purple */
+    --secondary: 265 60% 80%;
+    --secondary-foreground: 225 18% 9%;
+
+    /* Muted */
+    --muted: 224 15% 18%;
+    --muted-foreground: 210 20% 65%;
+
+    /* Accent - Blue */
+    --accent: 200 100% 64%;
+    --accent-foreground: 225 18% 9%;
+
+    /* Destructive - Red */
+    --destructive: 0 100% 70%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Success - Green */
+    --success: 120 100% 56%;
+    --success-foreground: 225 18% 9%;
+
+    /* Warning - Purple glow */
+    --warning: 265 60% 80%;
+    --warning-foreground: 225 18% 9%;
+
+    /* Border & Input */
+    --border: 224 15% 18%;
+    --input: 224 15% 18%;
+    --ring: 120 100% 56%;
+
+    --radius: 1rem;
+
+    /* Sidebar */
+    --sidebar-background: 225 18% 9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 120 100% 56%;
+    --sidebar-primary-foreground: 225 18% 9%;
+    --sidebar-accent: 224 15% 13%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 224 15% 18%;
+    --sidebar-ring: 120 100% 56%;
+    
+    /* Shadows */
+    --shadow-glow-green: 0 0 40px hsl(120 100% 56% / 0.3);
+    --shadow-glow-purple: 0 0 40px hsl(265 60% 80% / 0.3);
+    --shadow-card: 0 10px 30px -10px hsl(225 18% 5% / 0.5);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
-body {
-  background: var(--color-alpha-bg);
-  color: var(--color-alpha-text-primary);
-  min-height: 100vh;
-  font-family: 'Inter', system-ui, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
 }
