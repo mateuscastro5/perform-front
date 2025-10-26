@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DashboardProvider } from './contexts/DashboardContext';
 import Dashboard from './pages/Dashboard';
+import Developers from './pages/Developers';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -29,6 +30,14 @@ function AppRoutes() {
             <DashboardProvider>
               <Dashboard />
             </DashboardProvider>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/developers"
+        element={
+          <ProtectedRoute>
+            <Developers />
           </ProtectedRoute>
         }
       />
