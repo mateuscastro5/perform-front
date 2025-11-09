@@ -14,9 +14,9 @@ const Settings = () => {
       
       <main className="container mx-auto p-4 md:p-6 pt-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Configurações</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Settings</h1>
           <p className="text-sm text-muted-foreground">
-            Gerencie suas preferências e integrações
+            Manage your preferences and integrations
           </p>
         </div>
 
@@ -24,15 +24,15 @@ const Settings = () => {
           <TabsList className="bg-muted/30">
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
-              Perfil
+              Profile
             </TabsTrigger>
             <TabsTrigger value="integrations" className="gap-2">
               <Plug className="h-4 w-4" />
-              Integrações
+              Integrations
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2">
               <Bell className="h-4 w-4" />
-              Notificações
+              Notifications
             </TabsTrigger>
           </TabsList>
 
@@ -40,14 +40,14 @@ const Settings = () => {
           <TabsContent value="profile">
             <Card className="bg-card/50 border-border backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Informações do Perfil</CardTitle>
+                <CardTitle>Profile Information</CardTitle>
                 <CardDescription>
-                  Atualize suas informações pessoais e preferências
+                  Update your personal information and preferences
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Em desenvolvimento...
+                  Under development...
                 </p>
               </CardContent>
             </Card>
@@ -62,14 +62,14 @@ const Settings = () => {
           <TabsContent value="notifications">
             <Card className="bg-card/50 border-border backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Preferências de Notificação</CardTitle>
+                <CardTitle>Notification Preferences</CardTitle>
                 <CardDescription>
-                  Configure como você deseja ser notificado
+                  Configure how you want to be notified
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Em desenvolvimento...
+                  Under development...
                 </p>
               </CardContent>
             </Card>
