@@ -324,6 +324,167 @@ export const apiService = {
 
     return handleResponse(response);
   },
+
+  async getGithubRecentActivity(
+    token: string,
+    repositoryId?: string,
+    limit = 20,
+  ): Promise<
+    Array<{
+      id: string;
+      type: 'commit' | 'pull_request' | 'review';
+      developer: {
+        id: string | null;
+        name: string;
+        githubUsername: string | null;
+        avatarUrl: string | null;
+      };
+      message: string;
+      state?: string;
+      reviewState?: string;
+      timestamp: string;
+      url: string;
+    }>
+  > {
+    const url = new URL(`${API_URL}/github/analytics/recent-activity`);
+    if (repositoryId) url.searchParams.append('repositoryId', repositoryId);
+    url.searchParams.append('limit', limit.toString());
+
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
+
+  async getGithubRecentPullRequests(
+    token: string,
+    repositoryId?: string,
+    limit = 10,
+  ): Promise<
+    Array<{
+      id: string;
+      title: string;
+      number: number;
+      state: string;
+      author: {
+        id: string | null;
+        name: string;
+        avatar: string;
+        login: string;
+      };
+      createdAt: string;
+      updatedAt: string;
+      closedAt: string | null;
+      mergedAt: string | null;
+      url: string;
+      additions: number;
+      deletions: number;
+      changedFiles: number;
+      commentsCount: number;
+      reviewers: Array<{
+        id: string | null;
+        name: string;
+        login: string;
+        avatar: string;
+        state: string;
+        submittedAt: string;
+      }>;
+      reviewsCount: number;
+      status: string;
+    }>
+  > {
+    const url = new URL(`${API_URL}/github/analytics/recent-pull-requests`);
+    if (repositoryId) url.searchParams.append('repositoryId', repositoryId);
+    url.searchParams.append('limit', limit.toString());
+
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
+
+  async getGithubTopReviewers(
+    token: string,
+    limit = 10,
+  ): Promise<
+    Array<{
+      reviewer: {
+        id: string | null;
+        name: string;
+        login: string;
+        avatar: string;
+      };
+      stats: {
+        prsReviewed: number;
+        totalReviews: number;
+        approved: number;
+        changesRequested: number;
+        commented: number;
+      };
+    }>
+  > {
+    const url = new URL(`${API_URL}/github/analytics/top-reviewers`);
+    url.searchParams.append('limit', limit.toString());
+
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
+
+  async getGithubDeveloperPRStatus(
+    token: string,
+  ): Promise<
+    Array<{
+      developer: {
+        id: string;
+        name: string;
+        githubUsername: string;
+        avatar: string;
+        squad: {
+          id: string;
+          name: string;
+        } | null;
+      };
+      prStatus: {
+        total: number;
+        open: number;
+        merged: number;
+        closed: number;
+      };
+    }>
+  > {
+    const response = await fetch(
+      `${API_URL}/github/analytics/developer-pr-status`,
+      {
+        headers: getAuthHeaders(token),
+      },
+    );
+
+    return handleResponse(response);
+  },
+
+  async getReviewerPullRequests(
+    token: string,
+    reviewerLogin: string,
+  ): Promise<{
+    approved: Array<any>;
+    changesRequested: Array<any>;
+    commented: Array<any>;
+    pending: Array<any>;
+  }> {
+    const response = await fetch(
+      `${API_URL}/github/analytics/reviewer/${reviewerLogin}/pull-requests`,
+      {
+        headers: getAuthHeaders(token),
+      },
+    );
+
+    return handleResponse(response);
+  },
 };
 
 export { ApiError };
