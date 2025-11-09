@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DashboardProvider } from './contexts/DashboardContext';
+import { ProgressToastContainer } from './components/ui/ProgressToastContainer';
 import Dashboard from './pages/Dashboard';
 import Developers from './pages/Developers';
 import Settings from './pages/Settings';
@@ -58,6 +59,7 @@ function App() {
       <AuthProvider>
         <DashboardProvider>
           <AppRoutes />
+          <ProgressToastContainer />
         </DashboardProvider>
       </AuthProvider>
     </BrowserRouter>
