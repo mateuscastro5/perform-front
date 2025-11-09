@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Bell, Settings, Minus, Square, X, User, LogOut } from "lucide-react";
+import { Search, Bell, Settings, Minus, Square, X, User, LogOut, RefreshCw } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/components/ui/avatar";
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/ui/components/ui/dropdown-menu";
 import { useAuth } from "@/ui/contexts/AuthContext";
+import { useDashboard } from "@/ui/contexts/DashboardContext";
 import { RepositoryFilter } from "./RepositoryFilter";
 
 interface DashboardHeaderProps {
@@ -22,7 +23,9 @@ interface DashboardHeaderProps {
 
 export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps) => {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { logout } = useAuth();
+  const { refreshDashboard } = useDashboard();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,6 +76,15 @@ export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps
       navigate("/");
     } else if (value === "developers") {
       navigate("/developers");
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshDashboard();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 1000);
     }
   };
 
@@ -150,6 +162,15 @@ export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps
 
           {/* User Actions */}
           <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              title="Refresh Data"
+            >
+              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />

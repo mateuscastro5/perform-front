@@ -62,8 +62,8 @@ export const CollaborationHeatmap = () => {
   const maxInteractions = Math.max(...interactions.map((i) => i.count), 1);
   
   return (
-    <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card h-[420px] flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="rounded-lg bg-accent/20 p-2">
             <GitBranch className="h-4 w-4 text-accent" />
@@ -78,11 +78,12 @@ export const CollaborationHeatmap = () => {
         <Users className="h-4 w-4 text-muted-foreground" />
       </div>
 
-      <div className="grid gap-1.5" style={{ gridTemplateColumns: `auto repeat(${teamMembers.length}, 1fr)` }}>
+      <div className="overflow-auto flex-1 flex items-center justify-center p-2">
+        <div className="grid gap-2 w-full max-w-full" style={{ gridTemplateColumns: `70px repeat(${teamMembers.length}, 1fr)` }}>
         {/* Header Row */}
         <div />
         {teamMembers.map((member: string) => (
-          <div key={member} className="text-center">
+          <div key={member} className="text-center flex items-center justify-center min-h-[24px]">
             <span className="text-[10px] font-medium text-muted-foreground truncate" title={member}>
               {member}
             </span>
@@ -92,7 +93,7 @@ export const CollaborationHeatmap = () => {
         {/* Data Grid */}
         {teamMembers.map((fromMember: string, fromIndex: number) => (
           <div key={`row-${fromIndex}`} className="contents">
-            <div className="flex items-center justify-end pr-1">
+            <div className="flex items-center justify-end pr-2 min-h-[48px]">
               <span className="text-[10px] font-medium text-muted-foreground truncate" title={fromMember}>
                 {fromMember}
               </span>
@@ -107,7 +108,7 @@ export const CollaborationHeatmap = () => {
               return (
                 <div
                   key={`cell-${fromIndex}-${toIndex}`}
-                  className="aspect-square rounded transition-all duration-300 hover:scale-110 cursor-pointer relative group"
+                  className="aspect-square rounded-md transition-all duration-300 hover:scale-105 cursor-pointer relative group"
                   style={{
                     backgroundColor: fromMember === toMember 
                       ? 'hsl(var(--muted))' 
@@ -130,20 +131,21 @@ export const CollaborationHeatmap = () => {
             })}
           </div>
         ))}
+        </div>
       </div>
 
-      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border/50">
-        <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded bg-primary" />
-          <span className="text-[10px] text-muted-foreground">High (66%+)</span>
+      <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/50 flex-shrink-0">
+        <div className="flex items-center gap-1">
+          <div className="h-2 w-2 rounded bg-primary" />
+          <span className="text-[9px] text-muted-foreground">High</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded bg-accent" />
-          <span className="text-[10px] text-muted-foreground">Medium (33-66%)</span>
+        <div className="flex items-center gap-1">
+          <div className="h-2 w-2 rounded bg-accent" />
+          <span className="text-[9px] text-muted-foreground">Medium</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded bg-muted" />
-          <span className="text-[10px] text-muted-foreground">Low (&lt;33%)</span>
+        <div className="flex items-center gap-1">
+          <div className="h-2 w-2 rounded bg-muted" />
+          <span className="text-[9px] text-muted-foreground">Low</span>
         </div>
       </div>
     </div>
