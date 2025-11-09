@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { DashboardHeader } from "@/ui/components/DashboardHeader";
 import { ExpandableMetricCard } from "@/ui/components/ExpandableMetricCard";
-import { CollaborationHeatmap } from "@/ui/components/CollaborationHeatmap";
 import { ActivityTimeline } from "@/ui/components/ActivityTimeline";
 import { PullRequestsList } from "@/ui/components/PullRequestsList";
 import { WeeklyImpact } from "@/ui/components/WeeklyImpact";
+import { TopReviewers } from "@/ui/components/TopReviewers";
+import { CollaborationHeatmap } from "@/ui/components/CollaborationHeatmap";
 import { GitPullRequest, GitCommit, MessageSquare, Activity } from "lucide-react";
 import { useDashboard } from "@/ui/contexts/DashboardContext";
 
@@ -108,17 +109,26 @@ const Dashboard = () => {
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 h-fit">
               <ActivityTimeline />
             </div>
             
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 h-fit">
               <PullRequestsList />
             </div>
             
-            <div className="lg:col-span-1 space-y-4">
-              <WeeklyImpact />
+            <div className="lg:col-span-1 h-fit">
+              <TopReviewers />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
               <CollaborationHeatmap />
+            </div>
+            
+            <div className="lg:col-span-1">
+              <WeeklyImpact />
             </div>
           </div>
         </div>

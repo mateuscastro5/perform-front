@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { apiService } from '../services/api.service';
 import { useAuth } from './AuthContext';
+import { useProgressToast } from '../hooks/useProgressToast';
 import type {
   DashboardMetrics,
   PRsResponse,
@@ -45,6 +46,7 @@ const DashboardContext = createContext<DashboardContextType | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const { token, user } = useAuth();
+  const toast = useProgressToast();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [pullRequests, setPullRequests] = useState<PRsResponse | null>(null);
   const [teamActivity, setTeamActivity] = useState<TeamActivityResponse | null>(
@@ -101,17 +103,28 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           weeklyActivity,
           developers,
           collaboration,
+          recentPRs,
         ] = await Promise.all([
           apiService.getGithubDashboardStats(token, 30, selectedRepository ?? undefined),
           apiService.getGithubWeeklyActivity(token, selectedRepository ?? undefined),
           apiService.getGithubDevelopers(token, 30, selectedRepository ?? undefined),
           apiService.getGithubCollaboration(token, selectedRepository ?? undefined),
+          apiService.getGithubRecentPullRequests(token, selectedRepository ?? undefined, 6),
         ]);
 
         setGithubStats(githubDashboard);
         setGithubWeeklyActivity(weeklyActivity);
         setGithubDevelopers(developers);
         setGithubCollaboration(collaboration);
+
+        // Set PRs from GitHub
+        setPullRequests({
+          prs: recentPRs,
+          total: githubDashboard.pullRequests.total,
+          page: 1,
+          limit: 6,
+          totalPages: Math.ceil(githubDashboard.pullRequests.total / 6),
+        });
 
         setMetrics({
           commitsThisWeek: githubDashboard.commits.thisWeek,
@@ -171,18 +184,63 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, [token, user?.id, selectedRepository]);
 
   const refreshDashboard = async () => {
-    await fetchDashboardData();
+    const toastId = toast.showLoading(
+      'Refreshing dashboard...',
+      'Fetching latest data from GitHub'
+    );
+
+    try {
+      await fetchDashboardData();
+      toast.completeWithSuccess(
+        toastId,
+        'Dashboard refreshed!',
+        'All data has been updated successfully'
+      );
+    } catch (err) {
+      toast.completeWithError(
+        toastId,
+        'Failed to refresh',
+        err instanceof Error ? err.message : 'An error occurred while refreshing'
+      );
+    }
   };
 
   const triggerDataCollection = async () => {
     if (!token) return;
+
+    const toastId = toast.showLoading(
+      'Collecting GitHub data...',
+      'This may take a few moments'
+    );
+
     try {
       await apiService.triggerGithubDataCollection(token);
-      setTimeout(() => {
-        fetchDashboardData();
+      
+      toast.updateProgress(toastId, 50);
+      
+      setTimeout(async () => {
+        try {
+          toast.updateProgress(toastId, 75);
+          await fetchDashboardData();
+          toast.completeWithSuccess(
+            toastId,
+            'Data collection completed!',
+            'GitHub data has been successfully collected and updated'
+          );
+        } catch (err) {
+          toast.completeWithError(
+            toastId,
+            'Failed to fetch updated data',
+            'Data was collected but failed to refresh dashboard'
+          );
+        }
       }, 2000);
     } catch (err) {
-      console.error('Failed to trigger data collection:', err);
+      toast.completeWithError(
+        toastId,
+        'Data collection failed',
+        err instanceof Error ? err.message : 'Failed to trigger data collection'
+      );
       throw err;
     }
   };
