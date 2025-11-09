@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/
 import { Button } from "@/ui/components/ui/button";
 import { Badge } from "@/ui/components/ui/badge";
 import { Label } from "@/ui/components/ui/label";
+import { Input } from "@/ui/components/ui/input";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/components/ui/select";
-import { Github, Check, X, RefreshCw, AlertCircle, ExternalLink } from "lucide-react";
+import { Github, Check, X, RefreshCw, AlertCircle, ExternalLink, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription } from "@/ui/components/ui/alert";
+import { githubService } from "@/ui/services/github.service";
 
 interface Repository {
   id: number;
@@ -19,18 +21,16 @@ interface Repository {
 export const GitHubIntegration = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [githubToken, setGithubToken] = useState("");
+  const [showToken, setShowToken] = useState(false);
+  const [connectionError, setConnectionError] = useState("");
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [selectedRepos, setSelectedRepos] = useState<number[]>([]);
   const [dataRange, setDataRange] = useState("1");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  const mockRepositories: Repository[] = [
-    { id: 1, name: "perform-front", fullName: "company/perform-front", private: false, description: "Frontend application" },
-    { id: 2, name: "perform-api", fullName: "company/perform-api", private: false, description: "Backend API" },
-    { id: 3, name: "ai-squad-glow", fullName: "company/ai-squad-glow", private: true, description: "AI Dashboard" },
-    { id: 4, name: "mobile-app", fullName: "company/mobile-app", private: false, description: "Mobile application" },
-  ];
+  const [githubUsername, setGithubUsername] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkGitHubConnection();
@@ -38,48 +38,75 @@ export const GitHubIntegration = () => {
 
   const checkGitHubConnection = async () => {
     try {
-      // TODO: Chamar API para verificar se está conectado
-      // const response = await api.get('/github/status');
-      // setIsConnected(response.data.connected);
-      // if (response.data.connected) {
-      //   setRepositories(response.data.repositories);
-      //   setSelectedRepos(response.data.selectedRepos);
-      //   setDataRange(response.data.dataRange);
-      // }
+      const response = await githubService.getStatus();
+      setIsConnected(response.connected);
+      setGithubUsername(response.githubUsername || "");
+      
+      if (response.connected) {
+        const allRepos = await githubService.listRepositories();
+        setRepositories(allRepos);
+        setSelectedRepos(response.selectedRepos || []);
+        setDataRange(response.dataRange?.toString() || "1");
+      }
     } catch (error) {
       console.error("Error checking GitHub connection:", error);
+      setIsConnected(false);
     }
   };
 
   const handleConnectGitHub = async () => {
     setIsLoading(true);
+    setConnectionError("");
+    
     try {
-      // TODO: Iniciar fluxo OAuth do GitHub
-      // const response = await api.get('/github/oauth-url');
-      // window.location.href = response.data.url;
-      
-      // Mock: simular conexão após 1 segundo
-      setTimeout(() => {
-        setIsConnected(true);
-        setRepositories(mockRepositories);
+      if (!githubToken.trim()) {
+        setConnectionError("Please enter your Personal Access Token");
         setIsLoading(false);
-      }, 1000);
-    } catch (error) {
+        return;
+      }
+
+      if (!githubToken.startsWith("ghp_") && !githubToken.startsWith("github_pat_")) {
+        setConnectionError("Invalid token. Token must start with 'ghp_' or 'github_pat_'");
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await githubService.connectWithToken(githubToken);
+      
+      setIsConnected(true);
+      setGithubUsername(response.username);
+      setGithubToken("");
+      
+      const repos = await githubService.listRepositories();
+      setRepositories(repos);
+      
+    } catch (error: unknown) {
       console.error("Error connecting to GitHub:", error);
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
+        : undefined;
+      setConnectionError(errorMessage || "Error connecting to GitHub. Check if the token is valid and has the necessary permissions.");
+    } finally {
       setIsLoading(false);
     }
   };
 
   const handleDisconnectGitHub = async () => {
+    setIsLoading(true);
     try {
-      // TODO: Chamar API para desconectar
-      // await api.delete('/github/disconnect');
+      await githubService.disconnect();
       
       setIsConnected(false);
       setRepositories([]);
       setSelectedRepos([]);
+      setGithubUsername("");
+      setGithubToken("");
+      setConnectionError("");
     } catch (error) {
       console.error("Error disconnecting GitHub:", error);
+      setConnectionError("Error disconnecting from GitHub");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -102,35 +129,41 @@ export const GitHubIntegration = () => {
   const handleSaveConfiguration = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
+    setConnectionError("");
     
     try {
-      // TODO: Chamar API para salvar configurações
-      // await api.post('/github/configure', {
-      //   repositories: selectedRepos,
-      //   dataRange: parseInt(dataRange)
-      // });
+      await githubService.saveConfiguration({
+        repositories: selectedRepos,
+        dataRange: parseInt(dataRange)
+      });
       
-      // Mock: simular salvamento
-      setTimeout(() => {
-        setIsSaving(false);
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
-      }, 1000);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error("Error saving configuration:", error);
+      setConnectionError("Error saving settings");
+    } finally {
       setIsSaving(false);
     }
   };
 
-  const getDataRangeLabel = (months: string) => {
-    const labels: Record<string, string> = {
-      "1": "1 mês (Processamento rápido)",
-      "3": "3 meses (Balanceado)",
-      "6": "6 meses (Análise detalhada)",
-      "12": "12 meses (Análise completa)",
+  const getDataRangeLabel = (value: string) => {
+    const labels: { [key: string]: string } = {
+      "1": "Last month",
+      "3": "Last 3 months", 
+      "6": "Last 6 months",
+      "12": "Last year"
     };
-    return labels[months] || months;
+    return labels[value] || "Last month";
   };
+
+  const filteredRepositories = repositories.filter((repo: Repository) =>
+    repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (repo.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+  );
+
+  const selectedRepositories = filteredRepositories.filter((repo: Repository) => selectedRepos.includes(repo.id));
+  const unselectedRepositories = filteredRepositories.filter((repo: Repository) => !selectedRepos.includes(repo.id));
 
   return (
     <div className="space-y-6">
@@ -141,16 +174,16 @@ export const GitHubIntegration = () => {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Github className="h-5 w-5" />
-                Integração com GitHub
+                GitHub Integration
               </CardTitle>
               <CardDescription className="mt-2">
-                Conecte sua conta do GitHub para monitorar repositórios e coletar métricas de desenvolvimento
+                Connect your GitHub account to monitor repositories and collect development metrics
               </CardDescription>
             </div>
             {isConnected && (
               <Badge variant="success" className="gap-1">
                 <Check className="h-3 w-3" />
-                Conectado
+                Connected
               </Badge>
             )}
           </div>
@@ -161,24 +194,85 @@ export const GitHubIntegration = () => {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Ao conectar sua conta do GitHub, você permitirá que o Perform acesse seus repositórios e colete dados de commits, pull requests e revisões de código.
+                  To connect your desktop application, you need to create a <strong>Personal Access Token (PAT)</strong> on GitHub.
+                  This token will allow Perform to access your repositories and collect data on commits, pull requests, and code reviews.
                 </AlertDescription>
               </Alert>
+
+              {/* Instructions Card */}
+              <Card className="bg-muted/30 border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">How to create your Personal Access Token</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
+                    <li>Access GitHub settings</li>
+                    <li>Go to <span className="text-foreground font-mono text-xs">Developer settings → Personal access tokens → Tokens (classic)</span></li>
+                    <li>Click on <span className="text-foreground font-medium">Generate new token (classic)</span></li>
+                    <li>Select the permissions: <span className="text-foreground font-mono text-xs">repo</span>, <span className="text-foreground font-mono text-xs">read:user</span>, <span className="text-foreground font-mono text-xs">admin:repo_hook</span></li>
+                    <li>Copy the generated token (you won't be able to see it again)</li>
+                  </ol>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2 w-full mt-3"
+                    onClick={() => window.open('https://github.com/settings/tokens/new', '_blank')}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Create Token on GitHub
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Token Input */}
+              <div className="space-y-2">
+                <Label htmlFor="github-token">Personal Access Token</Label>
+                <div className="relative">
+                  <Input
+                    id="github-token"
+                    type={showToken ? "text" : "password"}
+                    value={githubToken}
+                    onChange={(e) => setGithubToken(e.target.value)}
+                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    className="pr-10 font-mono text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowToken(!showToken)}
+                  >
+                    {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  The token must start with <span className="font-mono">ghp_</span> or <span className="font-mono">github_pat_</span>
+                </p>
+              </div>
+
+              {connectionError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{connectionError}</AlertDescription>
+                </Alert>
+              )}
               
               <Button 
                 onClick={handleConnectGitHub} 
-                disabled={isLoading}
-                className="gap-2"
+                disabled={isLoading || !githubToken.trim()}
+                className="gap-2 w-full"
               >
                 {isLoading ? (
                   <>
                     <RefreshCw className="h-4 w-4 animate-spin" />
-                    Conectando...
+                    Connecting...
                   </>
                 ) : (
                   <>
                     <Github className="h-4 w-4" />
-                    Conectar com GitHub
+                    Connect to GitHub
                   </>
                 )}
               </Button>
@@ -191,8 +285,10 @@ export const GitHubIntegration = () => {
                     <Github className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">Conta Conectada</p>
-                    <p className="text-xs text-muted-foreground">Acesso aos repositórios autorizado</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {githubUsername ? `@${githubUsername}` : "Connected Account"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Repository access authorized</p>
                   </div>
                 </div>
                 <Button 
@@ -200,17 +296,34 @@ export const GitHubIntegration = () => {
                   size="sm" 
                   onClick={handleDisconnectGitHub}
                   className="gap-2"
+                  disabled={isLoading}
                 >
-                  <X className="h-4 w-4" />
-                  Desconectar
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Disconnecting...
+                    </>
+                  ) : (
+                    <>
+                      <X className="h-4 w-4" />
+                      Disconnect
+                    </>
+                  )}
                 </Button>
               </div>
+
+              {connectionError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{connectionError}</AlertDescription>
+                </Alert>
+              )}
 
               {saveSuccess && (
                 <Alert className="border-success bg-success/10">
                   <Check className="h-4 w-4 text-success" />
                   <AlertDescription className="text-success">
-                    Configurações salvas com sucesso!
+                    Settings saved successfully!
                   </AlertDescription>
                 </Alert>
               )}
@@ -224,69 +337,158 @@ export const GitHubIntegration = () => {
         <>
           <Card className="bg-card/50 border-border backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>Selecionar Repositórios</CardTitle>
+              <CardTitle>Select Repositories</CardTitle>
               <CardDescription>
-                Escolha quais repositórios serão monitorados pelo Perform
+                Choose which repositories will be monitored by Perform
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-border/50">
                 <Label className="text-sm font-semibold">
-                  {selectedRepos.length} de {repositories.length} selecionados
+                  {selectedRepos.length} of {repositories.length} selected
                 </Label>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={handleSelectAll}
                 >
-                  {selectedRepos.length === repositories.length ? "Desmarcar todos" : "Selecionar todos"}
+                  {selectedRepos.length === repositories.length ? "Deselect all" : "Select all"}
                 </Button>
               </div>
 
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {repositories.map((repo) => (
-                  <div 
-                    key={repo.id}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors"
+              {/* Search Input */}
+              <div className="relative">
+                <Input
+                  placeholder="Search repositories..."
+                  value={searchQuery}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                  className="pr-8"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-2"
+                    onClick={() => setSearchQuery("")}
                   >
-                    <Checkbox
-                      checked={selectedRepos.includes(repo.id)}
-                      onCheckedChange={() => handleToggleRepo(repo.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">
-                          {repo.fullName}
-                        </p>
-                        {repo.private && (
-                          <Badge variant="secondary" className="text-[10px] h-5">
-                            Privado
-                          </Badge>
-                        )}
-                      </div>
-                      {repo.description && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {repo.description}
-                        </p>
-                      )}
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="h-8 w-8"
-                      asChild
-                    >
-                      <a 
-                        href={`https://github.com/${repo.fullName}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {/* Selected Repositories Section */}
+                {selectedRepositories.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase">
+                      Selected ({selectedRepositories.length})
+                    </Label>
+                    {selectedRepositories.map((repo: Repository) => (
+                      <div 
+                        key={repo.id}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors"
                       >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
+                        <Checkbox
+                          checked={true}
+                          onCheckedChange={() => handleToggleRepo(repo.id)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-foreground">
+                              {repo.fullName}
+                            </p>
+                            {repo.private && (
+                              <Badge variant="secondary" className="text-[10px] h-5">
+                                Private
+                              </Badge>
+                            )}
+                          </div>
+                          {repo.description && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {repo.description}
+                            </p>
+                          )}
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <a 
+                            href={`https://github.com/${repo.fullName}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {/* Unselected Repositories Section */}
+                {unselectedRepositories.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedRepositories.length > 0 && (
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase mt-4 block">
+                        Available ({unselectedRepositories.length})
+                      </Label>
+                    )}
+                    {unselectedRepositories.map((repo: Repository) => (
+                      <div 
+                        key={repo.id}
+                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors"
+                      >
+                        <Checkbox
+                          checked={false}
+                          onCheckedChange={() => handleToggleRepo(repo.id)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-foreground">
+                              {repo.fullName}
+                            </p>
+                            {repo.private && (
+                              <Badge variant="secondary" className="text-[10px] h-5">
+                                Private
+                              </Badge>
+                            )}
+                          </div>
+                          {repo.description && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {repo.description}
+                            </p>
+                          )}
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <a 
+                            href={`https://github.com/${repo.fullName}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No results message */}
+                {filteredRepositories.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    {searchQuery ? `No repositories found matching "${searchQuery}"` : "No repositories available"}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -294,15 +496,15 @@ export const GitHubIntegration = () => {
           {/* Data Range Configuration Card */}
           <Card className="bg-card/50 border-border backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>Período de Coleta de Dados</CardTitle>
+              <CardTitle>Data Collection Period</CardTitle>
               <CardDescription>
-                Defina quantos meses de histórico serão analisados pela IA
+                Set how many months of history will be analyzed by the AI
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <Label htmlFor="data-range" className="text-sm font-semibold">
-                  Período de análise
+                  Analysis period
                 </Label>
                 <Select value={dataRange} onValueChange={setDataRange}>
                   <SelectTrigger id="data-range">
@@ -324,7 +526,7 @@ export const GitHubIntegration = () => {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Períodos mais longos fornecem análises mais precisas, mas levarão mais tempo para processar inicialmente.
+                  Longer periods provide more accurate analysis, but will take longer to process initially.
                 </p>
               </div>
 
@@ -337,12 +539,12 @@ export const GitHubIntegration = () => {
                   {isSaving ? (
                     <>
                       <RefreshCw className="h-4 w-4 animate-spin" />
-                      Salvando...
+                      Saving...
                     </>
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Salvar Configurações
+                      Save Configuration
                     </>
                   )}
                 </Button>

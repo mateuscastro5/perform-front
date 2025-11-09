@@ -28,9 +28,7 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardProvider>
-              <Dashboard />
-            </DashboardProvider>
+            <Dashboard />
           </ProtectedRoute>
         }
       />
@@ -58,7 +56,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <DashboardProvider>
+          <AppRoutes />
+        </DashboardProvider>
       </AuthProvider>
     </BrowserRouter>
   );

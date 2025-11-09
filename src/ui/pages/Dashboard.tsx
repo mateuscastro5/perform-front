@@ -6,9 +6,29 @@ import { ActivityTimeline } from "@/ui/components/ActivityTimeline";
 import { PullRequestsList } from "@/ui/components/PullRequestsList";
 import { WeeklyImpact } from "@/ui/components/WeeklyImpact";
 import { GitPullRequest, GitCommit, MessageSquare, Activity } from "lucide-react";
+import { useDashboard } from "@/ui/contexts/DashboardContext";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
+  const { githubStats, githubDevelopers, isLoading } = useDashboard();
+
+  const totalPRs = githubStats?.pullRequests.total || 0;
+  const openPRs = githubStats?.pullRequests.open || 0;
+  const closedPRs = githubStats?.pullRequests.closed || 0;
+  const mergedPRs = githubStats?.pullRequests.merged || 0;
+  const awaitingReview = githubStats?.pullRequests.awaitingReview || 0;
+  
+  const totalCommits = githubStats?.commits.total || 0;
+  const commitsThisWeek = githubStats?.commits.thisWeek || 0;
+  const commitsLastWeek = githubStats?.commits.lastWeek || 0;
+  const commitsChange = githubStats?.commits.percentageChange || 0;
+  
+  const totalReviews = githubStats?.reviews.total || 0;
+  const approvedReviews = githubStats?.reviews.approved || 0;
+  const changesRequested = githubStats?.reviews.changesRequested || 0;
+  const pendingReviews = githubStats?.reviews.pending || 0;
+  
+  const activeDevelopers = githubDevelopers?.length || 0;
 
   return (
     <div className="min-h-screen w-full bg-background">
@@ -30,58 +50,58 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <ExpandableMetricCard
               title="Total Pull Requests"
-              value={24}
-              change="+12% from last week"
+              value={isLoading ? "..." : totalPRs}
+              change={isLoading ? "Loading..." : `${totalPRs > 0 ? 'Active PRs' : 'No active PRs'}`}
               changeType="positive"
               icon={GitPullRequest}
               iconColor="text-accent"
               details={[
-                { label: "Open PRs", value: "8" },
-                { label: "In Review", value: "5" },
-                { label: "Approved", value: "7" },
-                { label: "Merged Today", value: "4" },
+                { label: "Open PRs", value: isLoading ? "..." : String(openPRs) },
+                { label: "Awaiting Review", value: isLoading ? "..." : String(awaitingReview) },
+                { label: "Merged", value: isLoading ? "..." : String(mergedPRs) },
+                { label: "Closed", value: isLoading ? "..." : String(closedPRs) },
               ]}
             />
 
             <ExpandableMetricCard
               title="Commits"
-              value={156}
-              change="+8% from last week"
-              changeType="positive"
+              value={isLoading ? "..." : totalCommits}
+              change={isLoading ? "Loading..." : `${commitsChange >= 0 ? '+' : ''}${commitsChange.toFixed(1)}% from last week`}
+              changeType={commitsChange >= 0 ? "positive" : "negative"}
               icon={GitCommit}
               iconColor="text-primary"
               details={[
-                { label: "Today", value: "23" },
-                { label: "This Week", value: "156" },
-                { label: "Top Contributor", value: "Sarah" },
+                { label: "This Week", value: isLoading ? "..." : String(commitsThisWeek) },
+                { label: "Last Week", value: isLoading ? "..." : String(commitsLastWeek) },
+                { label: "Avg/Day", value: isLoading ? "..." : String(Math.round(commitsThisWeek / 7)) },
               ]}
             />
 
             <ExpandableMetricCard
               title="Reviews"
-              value={42}
-              change="-3% from last week"
-              changeType="negative"
+              value={isLoading ? "..." : totalReviews}
+              change={isLoading ? "Loading..." : `${approvedReviews} approved`}
+              changeType="positive"
               icon={MessageSquare}
               iconColor="text-warning"
               details={[
-                { label: "Pending", value: "8" },
-                { label: "Completed", value: "34" },
-                { label: "Avg Time", value: "4.2h" },
+                { label: "Pending", value: isLoading ? "..." : String(pendingReviews) },
+                { label: "Approved", value: isLoading ? "..." : String(approvedReviews) },
+                { label: "Changes Req.", value: isLoading ? "..." : String(changesRequested) },
               ]}
             />
 
             <ExpandableMetricCard
-              title="Uptime"
-              value="99.8%"
-              change="All systems go"
+              title="Active Developers"
+              value={isLoading ? "..." : activeDevelopers}
+              change="Contributing this week"
               changeType="positive"
               icon={Activity}
               iconColor="text-success"
               details={[
-                { label: "Production", value: "100%" },
-                { label: "Staging", value: "99.5%" },
-                { label: "Last Incident", value: "12d ago" },
+                { label: "Total Devs", value: isLoading ? "..." : String(activeDevelopers) },
+                { label: "Active", value: isLoading ? "..." : String(activeDevelopers) },
+                { label: "Engagement", value: isLoading ? "..." : activeDevelopers > 0 ? "100%" : "0%" },
               ]}
             />
           </div>

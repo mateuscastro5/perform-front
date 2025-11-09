@@ -36,7 +36,7 @@ export const MetricCard = ({
           className
         )}
       >
-        {/* Valor principal com animação */}
+        {/* Main value with animation */}
         <motion.div 
           className={cn('text-3xl font-bold mb-2', colorClasses.text)}
           initial={{ scale: 0 }}
@@ -54,7 +54,7 @@ export const MetricCard = ({
         {/* Label */}
         <div className="text-gray-300 text-sm font-medium">{label}</div>
         
-        {/* Subtitle com animação */}
+        {/* Subtitle with animation */}
         {subtitle && (
           <motion.div 
             className={cn('text-xs mt-1 font-medium', colorClasses.textSubtle)}
