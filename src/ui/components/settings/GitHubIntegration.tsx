@@ -6,7 +6,7 @@ import { Label } from "@/ui/components/ui/label";
 import { Input } from "@/ui/components/ui/input";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/components/ui/select";
-import { Github, Check, X, RefreshCw, AlertCircle, ExternalLink, Eye, EyeOff } from "lucide-react";
+import { Github, Check, X, RefreshCw, AlertCircle, ExternalLink, Eye, EyeOff, Search } from "lucide-react";
 import { Alert, AlertDescription } from "@/ui/components/ui/alert";
 import { githubService } from "@/ui/services/github.service";
 
@@ -31,6 +31,7 @@ export const GitHubIntegration = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [githubUsername, setGithubUsername] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchExpanded, setSearchExpanded] = useState(false);
 
   useEffect(() => {
     checkGitHubConnection();
@@ -347,146 +348,189 @@ export const GitHubIntegration = () => {
                 <Label className="text-sm font-semibold">
                   {selectedRepos.length} of {repositories.length} selected
                 </Label>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleSelectAll}
-                >
-                  {selectedRepos.length === repositories.length ? "Deselect all" : "Select all"}
-                </Button>
-              </div>
-
-              {/* Search Input */}
-              <div className="relative">
-                <Input
-                  placeholder="Search repositories..."
-                  value={searchQuery}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                  className="pr-8"
-                />
-                {searchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-2"
-                    onClick={() => setSearchQuery("")}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {/* Selected Repositories Section */}
-                {selectedRepositories.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase">
-                      Selected ({selectedRepositories.length})
-                    </Label>
-                    {selectedRepositories.map((repo: Repository) => (
-                      <div 
-                        key={repo.id}
-                        className="flex items-start gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors"
-                      >
-                        <Checkbox
-                          checked={true}
-                          onCheckedChange={() => handleToggleRepo(repo.id)}
-                          className="mt-1"
+                <div className="flex items-center gap-2">
+                  {/* Expandable Search */}
+                  <div className={`flex items-center transition-all duration-300 ${searchExpanded ? 'w-64' : 'w-10'}`}>
+                    {searchExpanded ? (
+                      <div className="relative w-full">
+                        <Input
+                          placeholder="Search repositories..."
+                          value={searchQuery}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                          className="pr-8 bg-background/50 border-primary/30 focus:border-primary"
+                          autoFocus
                         />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-foreground">
-                              {repo.fullName}
-                            </p>
-                            {repo.private && (
-                              <Badge variant="secondary" className="text-[10px] h-5">
-                                Private
-                              </Badge>
-                            )}
-                          </div>
-                          {repo.description && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {repo.description}
-                            </p>
-                          )}
-                        </div>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
-                          asChild
+                          className="absolute right-0 top-0 h-full w-8"
+                          onClick={() => {
+                            setSearchQuery("");
+                            setSearchExpanded(false);
+                          }}
                         >
-                          <a 
-                            href={`https://github.com/${repo.fullName}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
-                    ))}
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 hover:bg-primary/10 hover:text-primary transition-colors"
+                        onClick={() => setSearchExpanded(true)}
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleSelectAll}
+                    className="hover:text-primary"
+                  >
+                    {selectedRepos.length === repositories.length ? "Deselect all" : "Select all"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                {/* Selected Repositories Grid */}
+                {selectedRepositories.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Selected ({selectedRepositories.length})
+                    </Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {selectedRepositories.map((repo: Repository) => (
+                        <div 
+                          key={repo.id}
+                          className="group relative flex flex-col p-4 rounded-lg bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 border border-primary/30 hover:border-primary/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.15)] cursor-pointer"
+                          onClick={() => handleToggleRepo(repo.id)}
+                        >
+                          {/* Neon Glow Effect */}
+                          <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
+                          
+                          <div className="relative z-10 flex items-start gap-3">
+                            <Checkbox
+                              checked={true}
+                              onCheckedChange={() => handleToggleRepo(repo.id)}
+                              className="mt-0.5 border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            />
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                                    {repo.fullName}
+                                  </p>
+                                  {repo.description && (
+                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                      {repo.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20 hover:text-primary flex-shrink-0"
+                                  asChild
+                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                >
+                                  <a 
+                                    href={`https://github.com/${repo.fullName}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </Button>
+                              </div>
+                              {repo.private && (
+                                <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-accent/20 border-accent/30">
+                                  Private
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {/* Unselected Repositories Section */}
+                {/* Unselected Repositories Grid */}
                 {unselectedRepositories.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {selectedRepositories.length > 0 && (
-                      <Label className="text-xs font-semibold text-muted-foreground uppercase mt-4 block">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2 block">
                         Available ({unselectedRepositories.length})
                       </Label>
                     )}
-                    {unselectedRepositories.map((repo: Repository) => (
-                      <div 
-                        key={repo.id}
-                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors"
-                      >
-                        <Checkbox
-                          checked={false}
-                          onCheckedChange={() => handleToggleRepo(repo.id)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-foreground">
-                              {repo.fullName}
-                            </p>
-                            {repo.private && (
-                              <Badge variant="secondary" className="text-[10px] h-5">
-                                Private
-                              </Badge>
-                            )}
-                          </div>
-                          {repo.description && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {repo.description}
-                            </p>
-                          )}
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="h-8 w-8"
-                          asChild
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {unselectedRepositories.map((repo: Repository) => (
+                        <div 
+                          key={repo.id}
+                          className="group relative flex flex-col p-4 rounded-lg bg-card/30 border border-border/50 hover:border-accent/50 hover:bg-card/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)] cursor-pointer"
+                          onClick={() => handleToggleRepo(repo.id)}
                         >
-                          <a 
-                            href={`https://github.com/${repo.fullName}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      </div>
-                    ))}
+                          <div className="relative z-10 flex items-start gap-3">
+                            <Checkbox
+                              checked={false}
+                              onCheckedChange={() => handleToggleRepo(repo.id)}
+                              className="mt-0.5 border-muted-foreground/30 hover:border-accent"
+                              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            />
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-foreground truncate group-hover:text-accent transition-colors">
+                                    {repo.fullName}
+                                  </p>
+                                  {repo.description && (
+                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                      {repo.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/20 hover:text-accent flex-shrink-0"
+                                  asChild
+                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                >
+                                  <a 
+                                    href={`https://github.com/${repo.fullName}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </Button>
+                              </div>
+                              {repo.private && (
+                                <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
+                                  Private
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 {/* No results message */}
                 {filteredRepositories.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    {searchQuery ? `No repositories found matching "${searchQuery}"` : "No repositories available"}
+                  <div className="text-center py-12 text-muted-foreground text-sm">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/30 mb-3">
+                      <Github className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                    <p className="font-medium">
+                      {searchQuery ? `No repositories found matching "${searchQuery}"` : "No repositories available"}
+                    </p>
                   </div>
                 )}
               </div>
