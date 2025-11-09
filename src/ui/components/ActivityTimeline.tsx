@@ -1,45 +1,71 @@
-import { GitCommit, GitPullRequest, MessageSquare, CheckCircle } from "lucide-react";
-
-const activities = [
-  {
-    type: "commit",
-    icon: GitCommit,
-    user: "Sarah Chen",
-    action: "pushed 5 commits",
-    repo: "backend-api",
-    time: "5 min ago",
-    color: "text-primary",
-  },
-  {
-    type: "pr",
-    icon: GitPullRequest,
-    user: "Marcus Lee",
-    action: "opened PR #234",
-    repo: "frontend-app",
-    time: "12 min ago",
-    color: "text-accent",
-  },
-  {
-    type: "review",
-    icon: MessageSquare,
-    user: "Ana Silva",
-    action: "reviewed PR #233",
-    repo: "backend-api",
-    time: "25 min ago",
-    color: "text-warning",
-  },
-  {
-    type: "merge",
-    icon: CheckCircle,
-    user: "David Kim",
-    action: "merged PR #232",
-    repo: "frontend-app",
-    time: "1 hour ago",
-    color: "text-success",
-  },
-];
+import { GitCommit, GitPullRequest, MessageSquare } from "lucide-react";
+import { useDashboard } from "../contexts/DashboardContext";
+import { formatDistanceToNow } from "date-fns";
+import type { TeamMember } from "../types/dashboard.types";
 
 export const ActivityTimeline = () => {
+  const { teamActivity, isLoading } = useDashboard();
+
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card h-full">
+        <h2 className="text-lg font-bold text-foreground mb-4">Live Activity</h2>
+        <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">
+          <div className="animate-pulse">Loading activity...</div>
+        </div>
+      </div>
+    );
+  }
+
+  const activities = teamActivity?.members || [];
+
+  if (activities.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card h-full">
+        <h2 className="text-lg font-bold text-foreground mb-4">Live Activity</h2>
+        <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">
+          No recent activity
+        </div>
+      </div>
+    );
+  }
+
+  const getActivityIcon = (status: string) => {
+    switch (status) {
+      case 'coding':
+        return GitCommit;
+      case 'active':
+        return GitPullRequest;
+      default:
+        return MessageSquare;
+    }
+  };
+
+  const getActivityColor = (status: string) => {
+    switch (status) {
+      case 'coding':
+        return "text-primary";
+      case 'active':
+        return "text-accent";
+      default:
+        return "text-muted-foreground";
+    }
+  };
+
+  const getActivityAction = (member: typeof activities[0]) => {
+    if (member.currentTask) {
+      return member.currentTask;
+    }
+    switch (member.status) {
+      case 'coding':
+        return "is coding";
+      case 'active':
+        return "is active";
+      default:
+        return "is away";
+    }
+  };
+  
   return (
     <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card h-full">
       <h2 className="text-lg font-bold text-foreground mb-4">Live Activity</h2>
@@ -49,35 +75,41 @@ export const ActivityTimeline = () => {
         <div className="absolute left-3 top-0 bottom-0 w-px bg-border" />
         
         <div className="space-y-3">
-          {activities.map((activity, index) => {
-            const Icon = activity.icon;
+          {activities.slice(0, 4).map((member: TeamMember, index: number) => {
+            const Icon = getActivityIcon(member.status);
+            const color = getActivityColor(member.status);
+            const action = getActivityAction(member);
+            const timeAgo = formatDistanceToNow(new Date(member.lastActivity), {
+              addSuffix: true,
+            });
+
             return (
               <div
-                key={index}
+                key={member.id}
                 className="relative pl-8 animate-fade-in"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Timeline Dot */}
-                <div className={cn(
-                  "absolute left-1.5 top-0.5 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center",
-                  activity.color
-                )}>
-                  <Icon className="h-2.5 w-2.5" />
+                <div className={`absolute left-0 mt-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-card ${color}`}>
+                  <Icon className="h-3 w-3" />
                 </div>
-                
-                <div className="rounded-lg bg-muted/30 p-2 hover:bg-muted/50 transition-all">
+
+                {/* Activity Content */}
+                <div className="rounded-lg bg-muted/30 p-2.5 transition-all duration-200 hover:bg-muted/50">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-foreground truncate">
-                        <span className="font-semibold">{activity.user}</span>{" "}
-                        <span className="text-muted-foreground">{activity.action}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-foreground">
+                        <span className="font-semibold">{member.name}</span>{" "}
+                        <span className="text-muted-foreground">{action}</span>
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {activity.repo}
-                      </p>
+                      {member.role && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {member.role}
+                        </p>
+                      )}
                     </div>
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                      {activity.time}
+                      {timeAgo}
                     </span>
                   </div>
                 </div>
@@ -89,7 +121,3 @@ export const ActivityTimeline = () => {
     </div>
   );
 };
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}

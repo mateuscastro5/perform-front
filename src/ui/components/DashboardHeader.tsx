@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/ui/components/ui/dropdown-menu";
 import { useAuth } from "@/ui/contexts/AuthContext";
+import { RepositoryFilter } from "./RepositoryFilter";
 
 interface DashboardHeaderProps {
   activeTab: string;
@@ -133,6 +134,11 @@ export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps
             </TabsList>
           </Tabs>
 
+          {/* Repository Filter */}
+          <div className="mx-4">
+            <RepositoryFilter />
+          </div>
+
           {/* Search Bar */}
           <div className="relative w-full max-w-xs mx-4">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -148,9 +154,13 @@ export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps
               <Bell className="h-5 w-5" />
               <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
             </Button>
-          <Button variant="ghost" size="icon">
-            <Settings className="h-5 w-5" />
-          </Button>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate("/settings")}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
