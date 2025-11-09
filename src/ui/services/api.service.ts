@@ -183,6 +183,147 @@ export const apiService = {
       userId,
     };
   },
+
+  async getGithubDashboardStats(
+    token: string,
+    days = 30,
+    repositoryId?: string,
+  ): Promise<{
+    commits: {
+      total: number;
+      thisWeek: number;
+      lastWeek: number;
+      percentageChange: number;
+    };
+    pullRequests: {
+      total: number;
+      open: number;
+      closed: number;
+      merged: number;
+      awaitingReview: number;
+    };
+    reviews: {
+      total: number;
+      approved: number;
+      changesRequested: number;
+      pending: number;
+    };
+    period: {
+      days: number;
+      since: string;
+    };
+  }> {
+    const url = new URL(`${API_URL}/github/analytics/dashboard`);
+    url.searchParams.append('days', days.toString());
+    if (repositoryId) url.searchParams.append('repositoryId', repositoryId);
+
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
+
+  async getGithubWeeklyActivity(
+    token: string,
+    repositoryId?: string,
+  ): Promise<{
+    data: Array<{ day: string; commits: number; date: string }>;
+    total: number;
+    average: number;
+  }> {
+    const url = new URL(`${API_URL}/github/analytics/weekly-activity`);
+    if (repositoryId) url.searchParams.append('repositoryId', repositoryId);
+
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
+
+  async getGithubCollaboration(
+    token: string,
+    repositoryId?: string,
+  ): Promise<{
+    developers: Array<{
+      id: string;
+      name: string;
+      githubUsername: string;
+      avatarUrl: string | null;
+    }>;
+    interactions: Array<{ from: string; to: string; count: number }>;
+    totalReviews: number;
+  }> {
+    const url = new URL(`${API_URL}/github/analytics/collaboration`);
+    if (repositoryId) url.searchParams.append('repositoryId', repositoryId);
+
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
+
+  async getGithubDevelopers(
+    token: string,
+    days = 30,
+    repositoryId?: string,
+  ): Promise<
+    Array<{
+      id: string;
+      name: string;
+      githubUsername: string;
+      email: string;
+      avatarUrl: string | null;
+      stats: {
+        commits: number;
+        pullRequests: number;
+        reviews: number;
+        mergedPRs: number;
+        period: { days: number; since: string };
+      };
+    }>
+  > {
+    const url = new URL(`${API_URL}/github/analytics/developers`);
+    url.searchParams.append('days', days.toString());
+    if (repositoryId) url.searchParams.append('repositoryId', repositoryId);
+
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
+
+  async getGithubMonitoredRepositories(
+    token: string,
+  ): Promise<
+    Array<{
+      id: string;
+      name: string;
+      fullName: string;
+      isActive: boolean;
+    }>
+  > {
+    const response = await fetch(`${API_URL}/github/analytics/repositories`, {
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
+
+  async triggerGithubDataCollection(token: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    const response = await fetch(`${API_URL}/github/collect-data`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+    });
+
+    return handleResponse(response);
+  },
 };
 
 export { ApiError };
