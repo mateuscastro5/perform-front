@@ -1,15 +1,21 @@
-
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DashboardProvider } from './contexts/DashboardContext';
-import TitleBar from './components/layout/TitleBar';
+import { ProgressToastContainer } from './components/ui/ProgressToastContainer';
 import Dashboard from './pages/Dashboard';
+import Developers from './pages/Developers';
+import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <Routes>
@@ -28,31 +34,44 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardProvider>
-              <div className="h-screen flex flex-col">
-                <div className="hover-zone" />
-                <TitleBar />
-                <div className="flex-1 flex overflow-hidden scroll-container">
-                  <Dashboard />
-                </div>
-              </div>
-            </DashboardProvider>
+            <Dashboard />
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/developers"
+        element={
+          <ProtectedRoute>
+            <Developers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Catch-all redirect */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
-        <AppRoutes />
+        <DashboardProvider>
+          <AppRoutes />
+          <ProgressToastContainer />
+        </DashboardProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
 export default App;
-

@@ -1,109 +1,143 @@
-import UserProfileCard from '../components/dashboard/UserProfileCard';
-import MetricCard from '../components/dashboard/MetricCard';
-import TeamActivityPanel from '../components/dashboard/CommitsPanel';
-import ImpactChart from '../components/dashboard/ProductivityChart';
-import PRsPanel from '../components/dashboard/PRsPanel';
-import { useDashboard } from '../contexts/DashboardContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from "react";
+import { DashboardHeader } from "@/ui/components/DashboardHeader";
+import { ExpandableMetricCard } from "@/ui/components/ExpandableMetricCard";
+import { ActivityTimeline } from "@/ui/components/ActivityTimeline";
+import { PullRequestsList } from "@/ui/components/PullRequestsList";
+import { WeeklyImpact } from "@/ui/components/WeeklyImpact";
+import { TopReviewers } from "@/ui/components/TopReviewers";
+import { CollaborationHeatmap } from "@/ui/components/CollaborationHeatmap";
+import { GitPullRequest, GitCommit, MessageSquare, Activity } from "lucide-react";
+import { useDashboard } from "@/ui/contexts/DashboardContext";
+import { useAuth } from "@/ui/contexts/AuthContext";
 
 const Dashboard = () => {
-  const { metrics, pullRequests, teamActivity, productivity, isLoading, error } = useDashboard();
+  const [activeTab, setActiveTab] = useState("home");
+  const { githubStats, githubDevelopers, isLoading } = useDashboard();
   const { user } = useAuth();
 
-  const handleMetricClick = (metric: string) => {
-    console.log('Metric clicked:', metric);
-  };
+  const displayName = user?.name?.split(' ')[0] || 'User';
+  const roleDisplay = user?.role === 'admin' ? 'Admin' : user?.role === 'tech_lead' ? 'Tech Lead' : 'Developer';
 
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <svg 
-            className="animate-spin h-12 w-12 text-blue-500 mx-auto mb-4" 
-            xmlns="http://www.w3.org/2000/svg" 
-            fill="none" 
-            viewBox="0 0 24 24"
-          >
-            <circle 
-              className="opacity-25" 
-              cx="12" 
-              cy="12" 
-              r="10" 
-              stroke="currentColor" 
-              strokeWidth="4"
-            ></circle>
-            <path 
-              className="opacity-75" 
-              fill="currentColor" 
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <p className="text-alpha-text-muted">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">Failed to load dashboard</p>
-          <p className="text-alpha-text-muted text-sm">{error}</p>
-        </div>
-      </div>
-    );
-  }
+  const totalPRs = githubStats?.pullRequests.total || 0;
+  const openPRs = githubStats?.pullRequests.open || 0;
+  const closedPRs = githubStats?.pullRequests.closed || 0;
+  const mergedPRs = githubStats?.pullRequests.merged || 0;
+  const awaitingReview = githubStats?.pullRequests.awaitingReview || 0;
+  
+  const totalCommits = githubStats?.commits.total || 0;
+  const commitsThisWeek = githubStats?.commits.thisWeek || 0;
+  const commitsLastWeek = githubStats?.commits.lastWeek || 0;
+  const commitsChange = githubStats?.commits.percentageChange || 0;
+  
+  const totalReviews = githubStats?.reviews.total || 0;
+  const approvedReviews = githubStats?.reviews.approved || 0;
+  const changesRequested = githubStats?.reviews.changesRequested || 0;
+  const pendingReviews = githubStats?.reviews.pending || 0;
+  
+  const activeDevelopers = githubDevelopers?.length || 0;
 
   return (
-    <div className="flex-1 p-6 overflow-auto scroll-container">
-      <div className="mb-8">
-        <UserProfileCard 
-          userName={user?.name}
-          userRole={user?.role}
-        />
+    <div className="min-h-screen w-full bg-background">
+      <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
+      
+      <main className="p-6">
+        <div className="max-w-[1600px] mx-auto space-y-6">
+          {/* Header Section */}
+          <div className="animate-fade-in">
+            <h1 className="text-3xl font-bold text-foreground mb-1">
+              Welcome back, <span className="text-primary">{displayName}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Here's what's happening with your squad today
+            </p>
+          </div>
 
-        <div className="grid grid-cols-4 gap-6">
-          <MetricCard
-            value={metrics?.commitsThisWeek || 0}
-            label="Commits this week"
-            subtitle={`${metrics?.commitsPercentageChange || 0 > 0 ? '+' : ''}${metrics?.commitsPercentageChange || 0}% vs last week`}
-            color="blue"
-            onClick={() => handleMetricClick('commits')}
-          />
-          <MetricCard
-            value={metrics?.openPRs || 0}
-            label="Open PRs"
-            subtitle={`${metrics?.awaitingReview || 0} awaiting review`}
-            color="yellow"
-            onClick={() => handleMetricClick('prs')}
-          />
-          <MetricCard
-            value={metrics?.reviewsDone || 0}
-            label="Reviews done"
-            subtitle={`${metrics?.reviewsPending || 0} pending`}
-            color="green"
-            onClick={() => handleMetricClick('reviews')}
-          />
-          <MetricCard
-            value={`${metrics?.uptime || 0}%`}
-            label="Uptime"
-            subtitle={metrics?.uptime === 100 ? "Excellent ✨" : "Good"}
-            color="purple"
-            onClick={() => handleMetricClick('uptime')}
-          />
-        </div>
-      </div>
+          {/* Top Metrics Row - 4 Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <ExpandableMetricCard
+              title="Total Pull Requests"
+              value={isLoading ? "..." : totalPRs}
+              change={isLoading ? "Loading..." : `${totalPRs > 0 ? 'Active PRs' : 'No active PRs'}`}
+              changeType="positive"
+              icon={GitPullRequest}
+              iconColor="text-accent"
+              details={[
+                { label: "Open PRs", value: isLoading ? "..." : String(openPRs) },
+                { label: "Awaiting Review", value: isLoading ? "..." : String(awaitingReview) },
+                { label: "Merged", value: isLoading ? "..." : String(mergedPRs) },
+                { label: "Closed", value: isLoading ? "..." : String(closedPRs) },
+              ]}
+            />
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="space-y-6">
-          <TeamActivityPanel members={teamActivity?.members} />
-          <ImpactChart data={productivity?.data} />
+            <ExpandableMetricCard
+              title="Commits"
+              value={isLoading ? "..." : totalCommits}
+              change={isLoading ? "Loading..." : `${commitsChange >= 0 ? '+' : ''}${commitsChange.toFixed(1)}% from last week`}
+              changeType={commitsChange >= 0 ? "positive" : "negative"}
+              icon={GitCommit}
+              iconColor="text-primary"
+              details={[
+                { label: "This Week", value: isLoading ? "..." : String(commitsThisWeek) },
+                { label: "Last Week", value: isLoading ? "..." : String(commitsLastWeek) },
+                { label: "Avg/Day", value: isLoading ? "..." : String(Math.round(commitsThisWeek / 7)) },
+              ]}
+            />
+
+            <ExpandableMetricCard
+              title="Reviews"
+              value={isLoading ? "..." : totalReviews}
+              change={isLoading ? "Loading..." : `${approvedReviews} approved`}
+              changeType="positive"
+              icon={MessageSquare}
+              iconColor="text-warning"
+              details={[
+                { label: "Pending", value: isLoading ? "..." : String(pendingReviews) },
+                { label: "Approved", value: isLoading ? "..." : String(approvedReviews) },
+                { label: "Changes Req.", value: isLoading ? "..." : String(changesRequested) },
+              ]}
+            />
+
+            <ExpandableMetricCard
+              title="Active Developers"
+              value={isLoading ? "..." : activeDevelopers}
+              change="Contributing this week"
+              changeType="positive"
+              icon={Activity}
+              iconColor="text-success"
+              details={[
+                { label: "Total Devs", value: isLoading ? "..." : String(activeDevelopers) },
+                { label: "Active", value: isLoading ? "..." : String(activeDevelopers) },
+                { label: "Engagement", value: isLoading ? "..." : activeDevelopers > 0 ? "100%" : "0%" },
+              ]}
+            />
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-1 h-fit">
+              <ActivityTimeline />
+            </div>
+            
+            <div className="lg:col-span-1 h-fit">
+              <PullRequestsList />
+            </div>
+            
+            <div className="lg:col-span-1 h-fit">
+              <TopReviewers />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <CollaborationHeatmap />
+            </div>
+            
+            <div className="lg:col-span-1">
+              <WeeklyImpact />
+            </div>
+          </div>
         </div>
-        <div className="col-span-2">
-          <PRsPanel pullRequests={pullRequests?.prs} />
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

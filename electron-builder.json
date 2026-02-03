@@ -1,32 +1,68 @@
 {
-    "appId": "com.alphasights.insights",
-    "productName": "alphaSights Insights",
-    "description": "Desktop application for data analysis and insights from alphaSights",
-    "author": "alphaSights",
-    "copyright": "Copyright © 2025 alphaSights",
+    "appId": "com.perform.insights",
+    "productName": "Perform",
+    "copyright": "Copyright © 2025 Mateus Fagundes",
+    "forceCodeSigning": false,
     "files": ["dist-electron", "dist-react"],
     "directories": {
-        "output": "dist"
+        "output": "dist",
+        "buildResources": "build"
     },
-    "icon": "./icon.png",
+    "asar": true,
+    "asarUnpack": ["**/*.node", "**/*.dll"],
+    "icon": "build/icons/png/256x256.png",
     "mac": {
-        "target": "dmg",
-        "icon": "./icon.png",
-        "category": "public.app-category.business"
+        "target": [
+            {
+                "target": "dmg",
+                "arch": ["x64", "arm64"]
+            }
+        ],
+        "icon": "build/icons/mac/icon.icns",
+        "category": "public.app-category.business",
+        "artifactName": "Perform-${version}-${arch}.dmg"
     },
     "linux": {
-        "target": "AppImage",
+        "target": [
+            {
+                "target": "deb",
+                "arch": ["x64"]
+            },
+            {
+                "target": "rpm",
+                "arch": ["x64"]
+            },
+            {
+                "target": "AppImage",
+                "arch": ["x64"]
+            }
+        ],
         "category": "Office",
-        "icon": "./icon.png"
+        "icon": "build/icons/png",
+        "artifactName": "Perform-${version}-${arch}.${ext}"
     },
     "win": {
-        "target": ["portable", "msi"],
-        "icon": "./icon.png"
+        "target": [
+            {
+                "target": "nsis",
+                "arch": ["x64"]
+            }
+        ],
+        "icon": "build/icons/win/icon.ico",
+        "sign": false
+    },
+    "nsis": {
+        "oneClick": false,
+        "allowToChangeInstallationDirectory": true,
+        "installerIcon": "build/icons/win/icon.ico",
+        "uninstallerIcon": "build/icons/win/icon.ico",
+        "installerHeaderIcon": "build/icons/win/icon.ico",
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true,
+        "shortcutName": "Perform",
+        "artifactName": "Perform-setup.exe"
     },
     "portable": {
-        "artifactName": "alphaSights-Insights-${version}-portable.exe"
-    },
-    "msi": {
-        "artifactName": "alphaSights-Insights-${version}-setup.msi"
+        "artifactName": "Perform-portable.exe"
     }
 }

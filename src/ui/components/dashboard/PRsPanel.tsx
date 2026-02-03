@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { motion } from "motion/react";
+import { GitPullRequest, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "../ui/base-components";
+import { animations } from "../../lib/design-system";
 import PRCard, { PRStatus } from './PRCard';
 import type { PullRequest } from '../../types/dashboard.types';
 
@@ -43,7 +46,7 @@ const PRsPanel = ({ pullRequests = [] }: PRsPanelProps) => {
           <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
             <span className="text-purple-400 text-sm">📋</span>
           </div>
-          <h2 className="text-xl font-semibold text-white">Recent Pull Requests</h2>
+          <h2 className="text-lg font-semibold leading-tight">Recent Pull Requests</h2>
         </div>
         <span className="text-gray-400 text-sm">{pullRequests.length} total PRs</span>
       </div>
@@ -76,7 +79,8 @@ const PRsPanel = ({ pullRequests = [] }: PRsPanelProps) => {
             disabled={currentPage === 1}
             className="px-4 py-2 text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
           >
-            ← Previous
+            <ChevronLeft className="w-4 h-4" />
+            Previous
           </button>
           
           <div className="flex items-center gap-2">
@@ -100,7 +104,8 @@ const PRsPanel = ({ pullRequests = [] }: PRsPanelProps) => {
             disabled={currentPage === totalPages}
             className="px-4 py-2 text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
           >
-            Next →
+            Next
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}
