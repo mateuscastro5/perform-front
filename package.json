@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "sync:gitlab": "bash ./sync-gitlab.sh main",
     "transpile:electron": "tsc --project src/electron/tsconfig.json",
     "transpile:ipc": "tsc --project src/electron/ipc/tsconfig.json",
     "transpile:preload": "tsc --project src/electron/ipc/tsconfig.preload.json",
