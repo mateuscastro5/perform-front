@@ -22,7 +22,7 @@
     "dist:mac": "npm run transpile:electron && npm run transpile:ipc && npm run transpile:preload && npm run build && electron-builder --mac",
     "dist:linux": "npm run transpile:electron && npm run transpile:ipc && npm run transpile:preload && npm run build && electron-builder --linux",
     "dist:all": "npm run transpile:electron && npm run transpile:ipc && npm run transpile:preload && npm run build && electron-builder -mwl",
-    "sync:gitlab": "bash ./sync-gitlab.sh main"
+    "sync:gitlab": "node sync-gitlab.js main"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",
