@@ -1,6 +1,5 @@
 import { app, BrowserWindow } from "electron";
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { isDev } from "./utils/dev.js";
 import { setupWindowHandlers, setupSettingsHandlers } from "./ipc/handlers.js";

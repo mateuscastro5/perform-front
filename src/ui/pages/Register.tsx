@@ -1,5 +1,4 @@
 import { useState, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../types/auth.types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/ui/components/ui/card';
@@ -7,6 +6,7 @@ import { Input } from '@/ui/components/ui/input';
 import { Label } from '@/ui/components/ui/label';
 import { Button } from '@/ui/components/ui/button';
 import { Alert, AlertDescription } from '@/ui/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/components/ui/select';
 import { Loader2 } from 'lucide-react';
 
 const Register = () => {
@@ -114,16 +114,21 @@ const Register = () => {
               {/* Role Select */}
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <select
+                <Select
                   name="role"
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                  onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}
                   disabled={isSubmitting}
-                  className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value={UserRole.DEVELOPER}>Developer</option>
-                  <option value={UserRole.TECH_LEAD}>Tech Lead</option>
-                </select>
+                  <SelectTrigger className="bg-background/50">
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={UserRole.DEVELOPER}>Developer</SelectItem>
+                    <SelectItem value={UserRole.TECH_LEAD}>Tech Lead</SelectItem>
+                    <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Password Input */}
@@ -186,12 +191,12 @@ const Register = () => {
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link 
-                to="/login" 
+              <a 
+                href="/login" 
                 className="text-primary hover:text-primary/80 font-medium transition-colors"
               >
                 Sign in
-              </Link>
+              </a>
             </div>
           </CardFooter>
         </Card>

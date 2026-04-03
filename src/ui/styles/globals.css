@@ -10,67 +10,54 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Dark tech background */
-    --background: 225 18% 9%;
-    --foreground: 210 40% 98%;
+    --background: 232 30% 8%;
+    --foreground: 220 35% 96%;
 
-    /* Card backgrounds with glassmorphism */
-    --card: 224 15% 13%;
-    --card-foreground: 210 40% 98%;
+    --card: 232 28% 12%;
+    --card-foreground: 220 35% 96%;
 
-    /* Popover */
-    --popover: 224 15% 13%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 232 26% 13%;
+    --popover-foreground: 220 35% 96%;
 
-    /* Primary - Neon Green */
-    --primary: 120 100% 56%;
-    --primary-foreground: 225 18% 9%;
+    --primary: 249 88% 71%;
+    --primary-foreground: 232 30% 10%;
 
-    /* Secondary - Purple */
-    --secondary: 265 60% 80%;
-    --secondary-foreground: 225 18% 9%;
+    --secondary: 262 50% 63%;
+    --secondary-foreground: 232 30% 10%;
 
-    /* Muted */
-    --muted: 224 15% 18%;
-    --muted-foreground: 210 20% 65%;
+    --muted: 232 22% 18%;
+    --muted-foreground: 223 18% 70%;
 
-    /* Accent - Blue */
-    --accent: 200 100% 64%;
-    --accent-foreground: 225 18% 9%;
+    --accent: 216 96% 69%;
+    --accent-foreground: 232 30% 10%;
 
-    /* Destructive - Red */
-    --destructive: 0 100% 70%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 86% 68%;
+    --destructive-foreground: 220 35% 96%;
 
-    /* Success - Green */
-    --success: 120 100% 56%;
-    --success-foreground: 225 18% 9%;
+    --success: 151 72% 48%;
+    --success-foreground: 232 30% 10%;
 
-    /* Warning - Purple glow */
-    --warning: 265 60% 80%;
-    --warning-foreground: 225 18% 9%;
+    --warning: 40 95% 61%;
+    --warning-foreground: 232 30% 10%;
 
-    /* Border & Input */
-    --border: 224 15% 18%;
-    --input: 224 15% 18%;
-    --ring: 120 100% 56%;
+    --border: 232 22% 24%;
+    --input: 232 22% 20%;
+    --ring: 249 88% 71%;
 
-    --radius: 1rem;
+    --radius: 1.1rem;
 
-    /* Sidebar */
-    --sidebar-background: 225 18% 9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 120 100% 56%;
-    --sidebar-primary-foreground: 225 18% 9%;
-    --sidebar-accent: 224 15% 13%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 224 15% 18%;
-    --sidebar-ring: 120 100% 56%;
+    --sidebar-background: 232 30% 8%;
+    --sidebar-foreground: 220 35% 96%;
+    --sidebar-primary: 249 88% 71%;
+    --sidebar-primary-foreground: 232 30% 10%;
+    --sidebar-accent: 232 26% 13%;
+    --sidebar-accent-foreground: 220 35% 96%;
+    --sidebar-border: 232 22% 24%;
+    --sidebar-ring: 249 88% 71%;
     
-    /* Shadows */
-    --shadow-glow-green: 0 0 40px hsl(120 100% 56% / 0.3);
-    --shadow-glow-purple: 0 0 40px hsl(265 60% 80% / 0.3);
-    --shadow-card: 0 10px 30px -10px hsl(225 18% 5% / 0.5);
+    --shadow-glow-green: 0 0 40px hsl(151 72% 48% / 0.22);
+    --shadow-glow-purple: 0 0 44px hsl(249 88% 71% / 0.24);
+    --shadow-card: 0 20px 55px -24px hsl(232 45% 2% / 0.75);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -83,6 +70,17 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at 16% 12%, hsl(var(--accent) / 0.14), transparent 35%),
+      radial-gradient(circle at 83% 8%, hsl(var(--primary) / 0.12), transparent 34%),
+      radial-gradient(circle at 42% 88%, hsl(var(--secondary) / 0.11), transparent 42%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass-surface {
+    @apply bg-card/40 backdrop-blur-2xl border border-border/50 shadow-2xl;
   }
 }

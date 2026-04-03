@@ -33,6 +33,13 @@ export interface RegisterDto {
   role?: UserRole;
 }
 
+export interface UpdateProfileDto {
+  name?: string;
+  email?: string;
+  githubUsername?: string;
+  avatarUrl?: string;
+}
+
 export interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -40,5 +47,7 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginDto) => Promise<void>;
   register: (data: RegisterDto) => Promise<void>;
+  refreshProfile: () => Promise<User | null>;
+  updateAuthenticatedUser: (user: User) => void;
   logout: () => void;
 }

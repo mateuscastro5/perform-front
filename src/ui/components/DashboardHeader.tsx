@@ -1,10 +1,26 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState, type CSSProperties, type ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Bell, Settings, Minus, Square, X, User, LogOut, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  Briefcase,
+  ChevronRight,
+  Home,
+  LayoutDashboard,
+  LogOut,
+  Minus,
+  Settings,
+  Shield,
+  Square,
+  User,
+  Users,
+  X,
+  Search,
+} from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/components/ui/avatar";
-import { Tabs, TabsList, TabsTrigger } from "@/ui/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,212 +29,230 @@ import {
   DropdownMenuTrigger,
 } from "@/ui/components/ui/dropdown-menu";
 import { useAuth } from "@/ui/contexts/AuthContext";
-import { useDashboard } from "@/ui/contexts/DashboardContext";
-import { RepositoryFilter } from "./RepositoryFilter";
 
 interface DashboardHeaderProps {
   activeTab: string;
   onTabChange: (value: string) => void;
 }
 
-export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps) => {
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const { logout, user } = useAuth();
-  const { refreshDashboard } = useDashboard();
-  const navigate = useNavigate();
+type NavItem = {
+  id: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  path?: string;
+  badge?: string;
+};
 
-  const userName = user?.name || 'User';
-  const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  const userRole = user?.role === 'admin' ? 'Admin' : user?.role === 'tech_lead' ? 'Tech Lead' : 'Developer';
-  const userAvatar = user?.avatarUrl || '';
+const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
+  {
+    title: "Navigation",
+    items: [
+      { id: "home", label: "Home", icon: LayoutDashboard, path: "/" },
+      { id: "squads", label: "Squads", icon: Users, path: "/squads" },
+      { id: "projects", label: "Projects", icon: Briefcase, path: "/" },
+      { id: "profile", label: "Profile", icon: User, path: "/profile" },
+      { id: "settings", label: "Settings", icon: Settings, path: "/settings" },
+    ],
+  },
+];
+
+const ACTIVE_LABEL_BY_ID: Record<string, string> = {
+  home: "Home",
+  squads: "Squads",
+  projects: "Projects",
+  profile: "Profile",
+  settings: "Settings",
+};
+
+export const DashboardHeader = ({ activeTab, onTabChange }: DashboardHeaderProps) => {
+  const [, setIsMaximized] = useState(false);
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+
+  const roleLabel = user?.role?.replace('_', ' ') ?? 'User';
+  const displayName = user?.name ?? 'User';
+  const displayEmail = user?.email ?? '';
+  const avatarFallback = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('') || 'U';
 
   useEffect(() => {
     if (window.electronAPI) {
-      window.electronAPI.window.onMaximized(() => {
-        setIsMaximized(true);
-      });
-      
-      window.electronAPI.window.onUnmaximized(() => {
-        setIsMaximized(false);
-      });
+      window.electronAPI.window.onMaximized(() => setIsMaximized(true));
+      window.electronAPI.window.onUnmaximized(() => setIsMaximized(false));
     }
   }, []);
 
   const handleMinimize = async () => {
-    if (window.electronAPI) {
-      try {
-        await window.electronAPI.window.minimize();
-      } catch (error) {
-        console.error('Error minimizing:', error);
-      }
-    }
+    if (window.electronAPI) await window.electronAPI.window.minimize();
   };
 
   const handleMaximize = async () => {
-    if (window.electronAPI) {
-      try {
-        await window.electronAPI.window.maximize();
-      } catch (error) {
-        console.error('Error maximizing:', error);
-      }
-    }
+    if (window.electronAPI) await window.electronAPI.window.maximize();
   };
 
   const handleClose = async () => {
-    if (window.electronAPI) {
-      try {
-        await window.electronAPI.window.close();
-      } catch (error) {
-        console.error('Error closing:', error);
-      }
-    }
+    if (window.electronAPI) await window.electronAPI.window.close();
   };
 
-  const handleTabChange = (value: string) => {
-    onTabChange(value);
-    if (value === "home") {
-      navigate("/");
-    } else if (value === "developers") {
-      navigate("/developers");
-    }
+  const handleTabChange = (item: NavItem) => {
+    onTabChange(item.id);
+    if (item.path) navigate(item.path);
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshDashboard();
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 1000);
-    }
-  };
+  const activeLabel = ACTIVE_LABEL_BY_ID[activeTab] ?? "Dashboard";
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-md select-none">
-      {/* Window Controls Bar - Draggable area */}
-      <div 
-        className="h-8 flex items-center justify-end px-2"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-      >
-        <div className="flex" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-10 hover:bg-muted/50 rounded-none"
-            onClick={handleMinimize}
-            title="Minimizar"
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-10 hover:bg-muted/50 rounded-none"
-            onClick={handleMaximize}
-            title={isMaximized ? "Restaurar" : "Maximizar"}
-          >
-            <Square className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-10 hover:bg-destructive/90 hover:text-destructive-foreground rounded-none"
-            onClick={handleClose}
-            title="Fechar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+    <>
+      <aside className="fixed left-6 top-6 bottom-6 z-40 w-[270px] rounded-[28px] border border-border/40 bg-card/35 backdrop-blur-2xl shadow-[0_20px_70px_-30px_hsl(var(--background)/0.95)] overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_8%,hsl(var(--accent)/0.2),transparent_26%),linear-gradient(180deg,hsl(var(--background)/0.35),hsl(var(--background)/0.7))]" />
+
+        <div className="relative z-10 h-full px-6 py-7 flex flex-col">
+          <div className="flex items-center justify-between pb-5 border-b border-border/30">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-foreground/90" />
+              </div>
+              <div>
+                <p className="text-[19px] font-semibold leading-none">Perform</p>
+                <p className="text-[11px] text-muted-foreground mt-1">AI-Powered Engineering</p>
+              </div>
+            </div>
+
+            <button className="h-8 w-8 rounded-lg border border-border/40 bg-background/30 text-muted-foreground flex items-center justify-center">
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="pt-7 pb-6 border-b border-border/30">
+            <p className="text-[44px] leading-[0.88] tracking-[-0.03em] font-light text-foreground">
+              Welcome
+              <br />
+              Back, {displayName.split(' ')[0] ?? 'User'}
+            </p>
+            <p className="text-sm text-muted-foreground mt-4">Last login: {new Date().toLocaleDateString()}</p>
+          </div>
+
+          <nav className="pt-5 flex-1 overflow-y-auto pr-1 space-y-5">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.title} className="space-y-1.5">
+                <p className="text-xs text-muted-foreground/80 px-2">{group.title}</p>
+
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleTabChange(item)}
+                      className={`relative w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                        isActive
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="ref-active-nav"
+                          className="absolute inset-0 rounded-xl border border-border/60 bg-gradient-to-r from-muted/40 via-muted/25 to-transparent"
+                          transition={{ type: "spring", stiffness: 360, damping: 30 }}
+                        />
+                      )}
+
+                      <div className="relative z-10 flex items-center gap-3">
+                        <Icon className="h-4 w-4" />
+                        <span className="text-[15px] font-medium">{item.label}</span>
+                      </div>
+
+                      <div className="relative z-10 flex items-center gap-2">
+                        {item.badge && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/50 border border-border/40 text-muted-foreground">
+                            {item.badge}
+                          </span>
+                        )}
+                        {isActive && <div className="h-4 w-[2px] rounded-full bg-foreground/70" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
         </div>
-      </div>
+      </aside>
 
-      {/* Main Header Content */}
-      <div className="border-b border-border/50">
-        <div className="flex h-16 items-center justify-between px-6">
-          {/* Logo */}
-          <div className="flex items-center gap-8">
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-primary">Perform</span>
-            </h1>
-          </div>
+      <header className="fixed left-[316px] right-6 top-6 z-50 overflow-hidden rounded-[24px] border border-border/40 bg-card/28 backdrop-blur-2xl shadow-[0_18px_60px_-32px_hsl(var(--background)/0.95)]">
+        <div className="absolute inset-0 bg-gradient-to-r from-background/65 via-background/35 to-background/30" />
 
-          {/* Navigation Tabs */}
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 max-w-md mx-8">
-            <TabsList className="w-full bg-muted/30">
-              <TabsTrigger value="home" className="flex-1">Home</TabsTrigger>
-              <TabsTrigger value="squads" className="flex-1">Squads</TabsTrigger>
-              <TabsTrigger value="developers" className="flex-1">Developers</TabsTrigger>
-              <TabsTrigger value="projects" className="flex-1">Projects</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Repository Filter */}
-          <div className="mx-4">
-            <RepositoryFilter />
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative w-full max-w-xs mx-4">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search projects, commits, developers..."
-              className="pl-10 bg-muted/30 border-border/50"
-            />
-          </div>
-
-          {/* User Actions */}
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              title="Refresh Data"
-            >
-              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+        <div className="relative z-10 h-8 flex items-center justify-end px-2" style={{ WebkitAppRegion: "drag" } as CSSProperties}>
+          <div className="flex" style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
+            <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-muted/30" onClick={handleMinimize}>
+              <Minus className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+            <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-muted/30" onClick={handleMaximize}>
+              <Square className="h-3.5 w-3.5" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate("/settings")}
-            >
-              <Settings className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-destructive/80 hover:text-destructive-foreground" onClick={handleClose}>
+              <X className="h-4 w-4" />
             </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 ml-2 pl-3 border-l border-border/50 hover:opacity-80 transition-opacity cursor-pointer outline-none">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={userAvatar} />
-                  <AvatarFallback>{userInitials}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-semibold text-foreground">{userName}</span>
-                  <span className="text-xs text-muted-foreground">{userRole}</span>
-                </div>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Editar Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="cursor-pointer text-destructive focus:text-destructive"
-                onClick={logout}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign Out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          </div>
         </div>
-      </div>
-    </div>
-  </header>
-);
+
+        <div className="relative z-10 h-[66px] px-6 flex items-center justify-between border-t border-border/25">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Home className="h-4 w-4" />
+            <span>Overview</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-foreground font-medium">{activeLabel}</span>
+          </div>
+
+          <div className="flex items-center gap-3" style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
+            <div className="relative w-[280px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search..." className="h-10 rounded-xl pl-10 bg-background/45 border-border/40" />
+            </div>
+
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-muted/30">
+              <Bell className="h-4 w-4" />
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2.5 pl-3 border-l border-border/35">
+                  <Avatar className="h-9 w-9 ring-1 ring-border/60">
+                    <AvatarImage src={user?.avatarUrl ?? undefined} />
+                    <AvatarFallback>{avatarFallback}</AvatarFallback>
+                  </Avatar>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold leading-none">{displayName}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{roleLabel}</p>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Edit Profile</span>
+                </DropdownMenuItem>
+                {displayEmail && (
+                  <DropdownMenuItem className="cursor-default opacity-70">
+                    <span className="text-xs truncate">{displayEmail}</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
+    </>
+  );
 };

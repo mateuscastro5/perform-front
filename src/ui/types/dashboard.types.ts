@@ -18,6 +18,7 @@ export interface PRReviewer {
   name: string;
   avatar?: string;
   status: ReviewerStatus;
+  state?: string;
 }
 
 export interface PRAuthor {
@@ -27,17 +28,20 @@ export interface PRAuthor {
 }
 
 export interface PullRequest {
-  id: number;
+  id: number | string;
   title: string;
   author: PRAuthor;
   status: PRStatus;
   createdAt: string;
   updatedAt: string;
-  branch: string;
-  targetBranch: string;
+  branch?: string;
+  targetBranch?: string;
   additions: number;
   deletions: number;
   reviewers: PRReviewer[];
+  url?: string;
+  closedAt?: string | null;
+  mergedAt?: string | null;
   description?: string;
   labels?: string[];
 }

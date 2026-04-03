@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { cn, getColorClasses, type ColorVariant } from '../../lib/design-system';
 import { Card, TooltipWrapper } from './base-components';
 

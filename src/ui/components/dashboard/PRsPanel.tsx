@@ -1,7 +1,5 @@
-import { motion } from "motion/react";
-import { GitPullRequest, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "../ui/base-components";
-import { animations } from "../../lib/design-system";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import PRCard, { PRStatus } from './PRCard';
 import type { PullRequest } from '../../types/dashboard.types';
 
@@ -77,7 +75,7 @@ const PRsPanel = ({ pullRequests = [] }: PRsPanelProps) => {
           <button
             onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
           >
             <ChevronLeft className="w-4 h-4" />
             Previous
@@ -102,7 +100,7 @@ const PRsPanel = ({ pullRequests = [] }: PRsPanelProps) => {
           <button
             onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
           >
             Next
             <ChevronRight className="w-4 h-4" />

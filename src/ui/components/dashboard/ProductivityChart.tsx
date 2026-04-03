@@ -1,4 +1,5 @@
-import { motion } from "motion/react";
+import { useMemo } from "react";
+import { motion } from "framer-motion";
 import { BarChart3, TrendingUp, Users } from "lucide-react";
 import { Card } from "../ui/base-components";
 import { animations } from "../../lib/design-system";
@@ -28,57 +29,46 @@ const ImpactChart = ({
   teamMembers = [],
   title = "Weekly Impact"
 }: ImpactChartProps) => {
-  
-  const [selectedMember, setSelectedMember] = useState('all');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (isDropdownOpen) {
-        setIsDropdownOpen(false);
-      }
-    };
-    
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [isDropdownOpen]);
-  
-  const selectedMetric = 'prsMerged';
-  
-  const currentMetric = {
-    name: 'PRs Merged',
-    color: 'rgb(34, 197, 94)',
-    icon: '�'
-  };
-
-  const maxValue = data.length > 0 ? Math.max(...data.map(d => d.prsMerged)) : 0;
-  const totalValue = data.reduce((sum, d) => sum + d.prsMerged, 0);
-  
-  const svgHeight = 120;
-  const svgWidth = 280;
+  const chartHeight = 120;
+  const chartWidth = 280;
   const padding = 20;
-  
-  const generatePath = () => {
-    if (data.length === 0) return '';
-    const points = data.map((point, index) => {
-      const x = padding + (index * (chartWidth - padding * 2)) / (data.length - 1);
-      const y = chartHeight - padding - ((point.prsMerged / maxValue) * (chartHeight - padding * 2));
-      return `${x},${y}`;
-    });
-    
-    return `M ${points.join(' L ')}`;
-  };
 
-  const generatePoints = () => {
+  const totals = useMemo(() => {
+    return data.reduce(
+      (acc, point) => {
+        acc.totalPRs += point.prsMerged;
+        acc.totalCommits += point.commits;
+        acc.totalReviews += point.codeReviews;
+        return acc;
+      },
+      { totalPRs: 0, totalCommits: 0, totalReviews: 0 },
+    );
+  }, [data]);
+
+  const maxValue = useMemo(
+    () => (data.length > 0 ? Math.max(...data.map((point) => point.prsMerged), 1) : 1),
+    [data],
+  );
+
+  const points = useMemo(() => {
     if (data.length === 0) return [];
     return data.map((point, index) => {
-      const x = padding + (index * (svgWidth - 2 * padding)) / (data.length - 1);
-      const y = svgHeight - padding - ((point.prsMerged / Math.max(maxValue, 1)) * (svgHeight - 2 * padding));
+      const x =
+        data.length === 1
+          ? chartWidth / 2
+          : padding + (index * (chartWidth - 2 * padding)) / (data.length - 1);
+      const y =
+        chartHeight -
+        padding -
+        (point.prsMerged / maxValue) * (chartHeight - 2 * padding);
       return { x, y, value: point.prsMerged, day: point.day };
     });
-  };
+  }, [chartHeight, chartWidth, data, maxValue, padding]);
 
-  const points = generatePoints();
+  const createPath = () => {
+    if (points.length === 0) return "";
+    return `M ${points.map((point) => `${point.x},${point.y}`).join(" L ")}`;
+  };
   
   if (data.length === 0) {
     return (
@@ -115,15 +105,15 @@ const ImpactChart = ({
 
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="text-center p-2 bg-slate-800/30 rounded-lg">
-            <div className="text-base font-bold text-blue-400 leading-tight">{totalPRs}</div>
+            <div className="text-base font-bold text-blue-400 leading-tight">{totals.totalPRs}</div>
             <div className="text-xs text-gray-400 mt-0.5">PRs Merged</div>
           </div>
           <div className="text-center p-2 bg-slate-800/30 rounded-lg">
-            <div className="text-base font-bold text-green-400 leading-tight">{totalCommits}</div>
+            <div className="text-base font-bold text-green-400 leading-tight">{totals.totalCommits}</div>
             <div className="text-xs text-gray-400 mt-0.5">Commits</div>
           </div>
           <div className="text-center p-2 bg-slate-800/30 rounded-lg">
-            <div className="text-base font-bold text-purple-400 leading-tight">{totalReviews}</div>
+            <div className="text-base font-bold text-purple-400 leading-tight">{totals.totalReviews}</div>
             <div className="text-xs text-gray-400 mt-0.5">Reviews</div>
           </div>
         </div>
@@ -154,7 +144,7 @@ const ImpactChart = ({
             
             {data.map((point, index) => {
               const x = padding + (index * (chartWidth - padding * 2)) / (data.length - 1);
-              const y = chartHeight - padding - ((point.prsMerged / maxValue) * (chartHeight - padding * 2));
+              const y = chartHeight - padding - ((point.prsMerged / Math.max(maxValue, 1)) * (chartHeight - padding * 2));
               
               return (
                 <motion.circle
@@ -183,7 +173,7 @@ const ImpactChart = ({
         <div className="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Users className="w-3 h-3" />
-            <span>All Team Members</span>
+            <span>{teamMembers.length > 0 ? `${teamMembers.length} team members` : 'All Team Members'}</span>
           </div>
           
           <button className="text-xs text-blue-400 hover:text-blue-300 transition-colors">

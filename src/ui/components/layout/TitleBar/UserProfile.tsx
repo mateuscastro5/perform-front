@@ -1,4 +1,5 @@
 import { useAuth } from '../../../contexts/AuthContext';
+import { Button } from '../../ui/base-components';
 
 interface UserProfileProps {
   userName?: string;

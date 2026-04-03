@@ -1,5 +1,4 @@
 import { useState, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/ui/components/ui/card';
 import { Input } from '@/ui/components/ui/input';
@@ -106,6 +105,15 @@ const Login = () => {
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
+            <div className="text-center text-sm text-muted-foreground">
+              Don't have an account?{' '}
+              <a 
+                href="/register" 
+                className="text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                Create one
+              </a>
+            </div>
           </CardFooter>
         </Card>
 

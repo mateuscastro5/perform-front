@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Github, Check, X, RefreshCw, AlertCircle, ExternalLink, Eye, EyeOff, Search } from "lucide-react";
 import { Alert, AlertDescription } from "@/ui/components/ui/alert";
 import { githubService } from "@/ui/services/github.service";
+import { useDashboard } from "@/ui/contexts/DashboardContext";
 
 interface Repository {
   id: number;
@@ -19,6 +20,7 @@ interface Repository {
 }
 
 export const GitHubIntegration = () => {
+  const { triggerDataCollection } = useDashboard();
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [githubToken, setGithubToken] = useState("");
@@ -29,6 +31,7 @@ export const GitHubIntegration = () => {
   const [dataRange, setDataRange] = useState("1");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState("Settings saved successfully!");
   const [githubUsername, setGithubUsername] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchExpanded, setSearchExpanded] = useState(false);
@@ -130,6 +133,7 @@ export const GitHubIntegration = () => {
   const handleSaveConfiguration = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
+    setSaveSuccessMessage("Settings saved successfully!");
     setConnectionError("");
     
     try {
@@ -137,8 +141,11 @@ export const GitHubIntegration = () => {
         repositories: selectedRepos,
         dataRange: parseInt(dataRange)
       });
+
+      await triggerDataCollection();
       
       setSaveSuccess(true);
+      setSaveSuccessMessage("Settings saved and data synchronized successfully!");
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error("Error saving configuration:", error);
@@ -324,7 +331,7 @@ export const GitHubIntegration = () => {
                 <Alert className="border-success bg-success/10">
                   <Check className="h-4 w-4 text-success" />
                   <AlertDescription className="text-success">
-                    Settings saved successfully!
+                    {saveSuccessMessage}
                   </AlertDescription>
                 </Alert>
               )}
@@ -583,7 +590,7 @@ export const GitHubIntegration = () => {
                   {isSaving ? (
                     <>
                       <RefreshCw className="h-4 w-4 animate-spin" />
-                      Saving...
+                      Saving and syncing...
                     </>
                   ) : (
                     <>
