@@ -1,4 +1,10 @@
-import { AuthResponse, LoginDto, RegisterDto, User } from '../types/auth.types';
+import {
+  AuthResponse,
+  LoginDto,
+  RegisterDto,
+  UpdateProfileDto,
+  User,
+} from '../types/auth.types';
 import type {
   DashboardMetrics,
   PRsResponse,
@@ -67,6 +73,16 @@ export const apiService = {
     const response = await fetch(`${API_URL}/auth/profile`, {
       method: 'GET',
       headers: getAuthHeaders(token),
+    });
+
+    return handleResponse<User>(response);
+  },
+
+  async updateProfile(token: string, data: UpdateProfileDto): Promise<User> {
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
     });
 
     return handleResponse<User>(response);
@@ -316,6 +332,18 @@ export const apiService = {
   async triggerGithubDataCollection(token: string): Promise<{
     success: boolean;
     message: string;
+    summary?: {
+      repositoriesTotal: number;
+      repositoriesProcessed: number;
+      commitsNew: number;
+      prsCreated: number;
+      prsUpdated: number;
+      reviewsNew: number;
+      errors: number;
+      since: string;
+      dataRangeMonths: number;
+      durationMs: number;
+    };
   }> {
     const response = await fetch(`${API_URL}/github/collect-data`, {
       method: 'POST',
@@ -483,6 +511,45 @@ export const apiService = {
       },
     );
 
+    return handleResponse(response);
+  },
+
+  // Squads API
+  async getSquads(token: string): Promise<any[]> {
+    const response = await fetch(`${API_URL}/squads`, {
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse(response);
+  },
+
+  async createSquad(token: string, name: string): Promise<any> {
+    const response = await fetch(`${API_URL}/squads`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ name }),
+    });
+    return handleResponse(response);
+  },
+
+  async deleteSquad(token: string, id: string): Promise<any> {
+    const response = await fetch(`${API_URL}/squads/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse(response);
+  },
+
+  async updateDeveloperSquad(token: string, developerId: string, squadId: string | null): Promise<any> {
+    const normalizedSquadId =
+      typeof squadId === 'string' && squadId.trim().length > 0
+        ? squadId
+        : null;
+
+    const response = await fetch(`${API_URL}/developers/${developerId}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ squadId: normalizedSquadId }),
+    });
     return handleResponse(response);
   },
 };

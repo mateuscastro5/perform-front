@@ -2,6 +2,7 @@ import { X, TrendingUp, TrendingDown, GitPullRequest, MessageSquare, AlertTriang
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/components/ui/avatar";
 import { Badge } from "@/ui/components/ui/badge";
 import { Button } from "@/ui/components/ui/button";
+import { motion } from "framer-motion";
 
 interface DeveloperDetailsProps {
   developer: {
@@ -47,67 +48,87 @@ const recentActivity = [
 
 export const DeveloperDetails = ({ developer, onClose }: DeveloperDetailsProps) => {
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 overflow-y-auto">
-      <div className="min-h-screen p-4 md:p-6">
-        <div className="max-w-6xl mx-auto bg-card/50 border border-border rounded-2xl shadow-2xl backdrop-blur-sm">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 overflow-y-auto"
+    >
+      <div className="min-h-screen p-4 md:p-6 flex items-center justify-center">
+        <motion.div 
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="w-full max-w-6xl bg-card/50 border border-border/40 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden"
+        >
           {/* Header */}
-          <div className="p-6 border-b border-border/50 flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+          <div className="p-8 border-b border-border/40 flex items-start justify-between bg-muted/10">
+            <div className="flex items-center gap-6">
+              <Avatar className="h-20 w-20 ring-2 ring-primary/20">
                 <AvatarImage src={developer.avatar} alt={developer.name} />
                 <AvatarFallback>{developer.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-xl font-bold text-foreground">{developer.name}</h2>
+                <h2 className="text-3xl font-light text-foreground tracking-tight mb-1">{developer.name}</h2>
                 <p className="text-sm text-muted-foreground">{developer.role}</p>
-                <p className="text-xs text-accent mt-1">Trabalhando em: {developer.currentWork}</p>
+                {developer.currentWork && (
+                  <p className="text-xs text-accent mt-2 font-medium">Working on: {developer.currentWork}</p>
+                )}
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-muted/50 rounded-full">
               <X className="h-5 w-5" />
             </Button>
           </div>
 
-          <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Strengths & Weaknesses */}
             <div className="space-y-6">
-              <div className="rounded-xl bg-muted/30 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-success" />
-                  <h3 className="text-sm font-semibold text-foreground">Pontos Fortes</h3>
+              <div className="rounded-xl bg-transparent border border-border/40 p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-success/10">
+                    <TrendingUp className="h-4 w-4 text-success" />
+                  </div>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Strengths</h3>
                 </div>
-                <div className="space-y-2">
-                  {developer.strengths.map((strength, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3 text-success flex-shrink-0" />
-                      <span className="text-xs text-foreground">{strength}</span>
+                <div className="space-y-3">
+                  {developer.strengths.length > 0 ? developer.strengths.map((strength, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">{strength}</span>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-sm text-muted-foreground italic">No data available</p>
+                  )}
                 </div>
               </div>
 
-              <div className="rounded-xl bg-muted/30 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                  <h3 className="text-sm font-semibold text-foreground">Pontos de Atenção</h3>
+              <div className="rounded-xl bg-transparent border border-border/40 p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-destructive/10">
+                    <TrendingDown className="h-4 w-4 text-destructive" />
+                  </div>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Areas for Growth</h3>
                 </div>
-                <div className="space-y-2">
-                  {developer.weaknesses.map((weakness, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <AlertTriangle className="h-3 w-3 text-destructive flex-shrink-0" />
-                      <span className="text-xs text-foreground">{weakness}</span>
+                <div className="space-y-3">
+                  {developer.weaknesses.length > 0 ? developer.weaknesses.map((weakness, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5">
+                      <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">{weakness}</span>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-sm text-muted-foreground italic">No data available</p>
+                  )}
                 </div>
               </div>
 
-              <div className="rounded-xl bg-muted/30 p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Atividade Recente</h3>
-                <div className="space-y-2">
+              <div className="rounded-xl bg-transparent border border-border/40 p-5">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Recent Activity</h3>
+                <div className="space-y-4">
                   {recentActivity.map((activity) => (
-                    <div key={activity.id} className="text-xs">
-                      <p className="text-foreground">{activity.message}</p>
-                      <p className="text-muted-foreground text-[10px]">{activity.time}</p>
+                    <div key={activity.id} className="text-sm border-l-2 border-border/50 pl-3 py-0.5">
+                      <p className="text-foreground mb-1">{activity.message}</p>
+                      <p className="text-muted-foreground text-xs">{activity.time}</p>
                     </div>
                   ))}
                 </div>
@@ -116,22 +137,24 @@ export const DeveloperDetails = ({ developer, onClose }: DeveloperDetailsProps) 
 
             {/* Middle Column - PRs Open & Reviewing */}
             <div className="space-y-6">
-              <div className="rounded-xl bg-card/50 border border-border p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <GitPullRequest className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold text-foreground">PRs Abertas</h3>
-                  <Badge variant="default" className="text-[10px] h-5 ml-auto">
+              <div className="rounded-xl bg-transparent border border-border/40 p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <GitPullRequest className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Open PRs</h3>
+                  <Badge variant="default" className="text-xs h-6 px-2 ml-auto bg-primary/20 text-primary hover:bg-primary/30 border-none">
                     {mockPRs.open.length}
                   </Badge>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {mockPRs.open.map((pr) => (
-                    <div key={pr.id} className="rounded-lg bg-muted/30 p-2.5">
-                      <h4 className="text-xs font-semibold text-foreground mb-1">{pr.title}</h4>
-                      <div className="flex items-center justify-between text-[10px]">
+                    <div key={pr.id} className="rounded-lg bg-muted/20 p-3 border border-transparent hover:border-border/30 transition-colors">
+                      <h4 className="text-sm font-medium text-foreground mb-2">{pr.title}</h4>
+                      <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">{pr.created}</span>
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="h-2.5 w-2.5" />
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <MessageSquare className="h-3.5 w-3.5" />
                           <span>{pr.reviews}</span>
                         </div>
                       </div>
@@ -140,22 +163,24 @@ export const DeveloperDetails = ({ developer, onClose }: DeveloperDetailsProps) 
                 </div>
               </div>
 
-              <div className="rounded-xl bg-card/50 border border-border p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="h-4 w-4 text-accent" />
-                  <h3 className="text-sm font-semibold text-foreground">Em Revisão</h3>
-                  <Badge variant="secondary" className="text-[10px] h-5 ml-auto">
+              <div className="rounded-xl bg-transparent border border-border/40 p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-accent/10">
+                    <Clock className="h-4 w-4 text-accent" />
+                  </div>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">In Review</h3>
+                  <Badge variant="secondary" className="text-xs h-6 px-2 ml-auto bg-accent/20 text-accent hover:bg-accent/30 border-none">
                     {mockPRs.reviewing.length}
                   </Badge>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {mockPRs.reviewing.map((pr) => (
-                    <div key={pr.id} className="rounded-lg bg-muted/30 p-2.5">
-                      <h4 className="text-xs font-semibold text-foreground mb-1">{pr.title}</h4>
-                      <div className="flex items-center justify-between text-[10px]">
+                    <div key={pr.id} className="rounded-lg bg-muted/20 p-3 border border-transparent hover:border-border/30 transition-colors">
+                      <h4 className="text-sm font-medium text-foreground mb-2">{pr.title}</h4>
+                      <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">{pr.created}</span>
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="h-2.5 w-2.5" />
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <MessageSquare className="h-3.5 w-3.5" />
                           <span>{pr.reviews}</span>
                         </div>
                       </div>
@@ -167,24 +192,26 @@ export const DeveloperDetails = ({ developer, onClose }: DeveloperDetailsProps) 
 
             {/* Right Column - Completed PRs */}
             <div>
-              <div className="rounded-xl bg-card/50 border border-border p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <h3 className="text-sm font-semibold text-foreground">PRs Concluídas</h3>
-                  <Badge variant="success" className="text-[10px] h-5 ml-auto">
+              <div className="rounded-xl bg-transparent border border-border/40 p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-success/10">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  </div>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Completed PRs</h3>
+                  <Badge variant="success" className="text-xs h-6 px-2 ml-auto bg-success/20 text-success hover:bg-success/30 border-none">
                     {mockPRs.completed.length}
                   </Badge>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {mockPRs.completed.map((pr) => (
-                    <div key={pr.id} className="rounded-lg bg-muted/30 p-2.5">
-                      <h4 className="text-xs font-semibold text-foreground mb-1">{pr.title}</h4>
-                      <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        <span>Criado: {pr.created}</span>
-                        <span className="text-success">Merged: {pr.merged}</span>
+                    <div key={pr.id} className="rounded-lg bg-muted/20 p-3 border border-transparent hover:border-border/30 transition-colors">
+                      <h4 className="text-sm font-medium text-foreground mb-2">{pr.title}</h4>
+                      <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                        <span>Created: {pr.created}</span>
+                        <span className="text-success font-medium">Merged: {pr.merged}</span>
                       </div>
-                      <div className="flex items-center gap-1 mt-1 text-[10px]">
-                        <MessageSquare className="h-2.5 w-2.5" />
+                      <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                        <MessageSquare className="h-3.5 w-3.5" />
                         <span>{pr.reviews} reviews</span>
                       </div>
                     </div>
@@ -193,8 +220,8 @@ export const DeveloperDetails = ({ developer, onClose }: DeveloperDetailsProps) 
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };

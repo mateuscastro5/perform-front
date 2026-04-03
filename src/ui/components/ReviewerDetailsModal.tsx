@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/ui/components/ui/avatar";
 import { apiService } from "../services/api.service";
 import { useAuth } from "../contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
+import { motion } from "framer-motion";
 
 interface ReviewerDetailsModalProps {
   reviewerLogin: string;
@@ -91,43 +92,49 @@ export const ReviewerDetailsModal = ({
     }
 
     return (
-      <div className="space-y-2">
-        {prList.map((pr) => (
-          <div
+      <div className="space-y-3">
+        {prList.map((pr, index) => (
+          <motion.div
             key={pr.id}
-            className="flex items-start gap-3 rounded-lg bg-muted/30 p-3 transition-all duration-200 hover:bg-muted/50 cursor-pointer"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+            whileHover={{ scale: 1.01, x: 4 }}
+            className="flex items-start gap-4 rounded-lg bg-muted/20 p-4 transition-colors duration-200 hover:bg-muted/40 cursor-pointer border border-transparent hover:border-border/30"
             onClick={() => window.open(pr.url, '_blank')}
           >
-            <Avatar className="h-8 w-8 ring-2 ring-primary/20 flex-shrink-0">
+            <Avatar className="h-10 w-10 ring-2 ring-primary/20 flex-shrink-0">
               <AvatarImage src={pr.author.avatar} alt={pr.author.name} />
               <AvatarFallback>{pr.author.name.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <h4 className="text-sm font-semibold text-foreground line-clamp-2">
+              <div className="flex items-start justify-between gap-3 mb-1.5">
+                <h4 className="text-sm font-medium text-foreground line-clamp-2">
                   {pr.title}
                 </h4>
-                {getStatusIcon(pr.status)}
+                <div className="mt-0.5">
+                  {getStatusIcon(pr.status)}
+                </div>
               </div>
               
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                <span>#{pr.number}</span>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2.5">
+                <span className="font-medium">#{pr.number}</span>
                 <span>•</span>
                 <span>{pr.author.name}</span>
                 <span>•</span>
                 <span>Reviewed {formatDistanceToNow(new Date(pr.reviewedAt), { addSuffix: true })}</span>
               </div>
 
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="text-success">+{pr.additions}</span>
-                  <span className="text-destructive">-{pr.deletions}</span>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5 bg-muted/30 px-2 py-0.5 rounded-md">
+                  <span className="text-success font-medium">+{pr.additions}</span>
+                  <span className="text-destructive font-medium">-{pr.deletions}</span>
                 </span>
-                <span>{pr.changedFiles} files</span>
+                <span className="bg-muted/30 px-2 py-0.5 rounded-md">{pr.changedFiles} files</span>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     );
@@ -140,71 +147,94 @@ export const ReviewerDetailsModal = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" onClick={onClose}>
-      <div className="relative w-full max-w-4xl max-h-[90vh] mx-4 bg-card border border-border rounded-xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" 
+      onClick={onClose}
+    >
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="relative w-full max-w-4xl max-h-[90vh] mx-4 bg-card/50 border border-border/40 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md" 
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border bg-card/50 backdrop-blur-sm">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+        <div className="flex items-center justify-between p-8 border-b border-border/40 bg-muted/10">
+          <div className="flex items-center gap-6">
+            <Avatar className="h-16 w-16 ring-2 ring-primary/20">
               <AvatarImage src={reviewerAvatar} alt={reviewerName} />
               <AvatarFallback>{reviewerName.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-xl font-bold text-foreground">{reviewerName}</h2>
+              <h2 className="text-2xl font-light text-foreground tracking-tight mb-1">{reviewerName}</h2>
               <p className="text-sm text-muted-foreground">@{reviewerLogin}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            className="p-2.5 rounded-full hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 px-6 pt-4 border-b border-border">
+        <div className="flex items-center gap-4 px-8 pt-6 border-b border-border/40">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-all ${
+                className={`flex items-center gap-2.5 px-4 py-3 rounded-t-lg transition-all relative ${
                   activeTab === tab.key
-                    ? 'bg-card border-b-2 border-primary text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/20'
                 }`}
               >
                 <Icon className={`h-4 w-4 ${activeTab === tab.key ? tab.color : ''}`} />
                 <span className="text-sm font-medium">{tab.label}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                   activeTab === tab.key
                     ? 'bg-primary/20 text-primary'
-                    : 'bg-muted text-muted-foreground'
+                    : 'bg-muted/50 text-muted-foreground'
                 }`}>
                   {tab.count}
                 </span>
+                {activeTab === tab.key && (
+                  <motion.div 
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  />
+                )}
               </button>
             );
           })}
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="p-8 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 220px)' }}>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-pulse text-muted-foreground">Loading pull requests...</div>
             </div>
           ) : (
-            <>
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               {activeTab === 'approved' && renderPRList(prs.approved, 'No approved pull requests')}
               {activeTab === 'changesRequested' && renderPRList(prs.changesRequested, 'No pull requests with changes requested')}
               {activeTab === 'commented' && renderPRList(prs.commented, 'No commented pull requests')}
-            </>
+            </motion.div>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };

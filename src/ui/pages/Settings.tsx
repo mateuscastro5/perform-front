@@ -9,10 +9,11 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState("settings");
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,hsl(var(--accent)/0.14),transparent_40%),radial-gradient(circle_at_85%_8%,hsl(var(--primary)/0.1),transparent_36%),radial-gradient(circle_at_45%_84%,hsl(var(--secondary)/0.12),transparent_42%)]" />
       <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
       
-      <main className="container mx-auto p-4 md:p-6 pt-8">
+      <main className="pl-[316px] pr-6 md:pr-10 pt-[122px] pb-10 relative z-10">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-2">Settings</h1>
           <p className="text-sm text-muted-foreground">

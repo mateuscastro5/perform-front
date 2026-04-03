@@ -119,7 +119,37 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
         // Set PRs from GitHub
         setPullRequests({
-          prs: recentPRs,
+          prs: recentPRs.map((pr) => ({
+            id: pr.number,
+            title: pr.title,
+            author: {
+              id: pr.author.id ?? pr.author.login,
+              name: pr.author.name,
+              avatar: pr.author.avatar,
+            },
+            status: (pr.status as 'draft' | 'review_requested' | 'approved' | 'changes_requested' | 'merged') ?? 'review_requested',
+            createdAt: pr.createdAt,
+            updatedAt: pr.updatedAt,
+            branch: 'unknown',
+            targetBranch: 'main',
+            additions: pr.additions,
+            deletions: pr.deletions,
+            reviewers: pr.reviewers.map((reviewer) => ({
+              id: reviewer.id ?? reviewer.login,
+              name: reviewer.name,
+              avatar: reviewer.avatar,
+              status:
+                reviewer.state === 'APPROVED'
+                  ? 'approved'
+                  : reviewer.state === 'CHANGES_REQUESTED'
+                    ? 'changes_requested'
+                    : 'pending',
+              state: reviewer.state,
+            })),
+            url: pr.url,
+            closedAt: pr.closedAt,
+            mergedAt: pr.mergedAt,
+          })),
           total: githubDashboard.pullRequests.total,
           page: 1,
           limit: 6,
@@ -159,9 +189,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             apiService.getDashboardMetrics(token, user.id),
             apiService.getPullRequests(token, { page: 1, limit: 6 }),
             apiService.getWeeklyProductivity(token, user.id),
-            user.squad?.id
-              ? apiService.getSquadActivity(token, user.squad.id)
-              : Promise.resolve(null),
+            Promise.resolve(null),
           ]);
 
         setMetrics(metricsData);
@@ -214,27 +242,28 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     );
 
     try {
-      await apiService.triggerGithubDataCollection(token);
-      
-      toast.updateProgress(toastId, 50);
-      
-      setTimeout(async () => {
-        try {
-          toast.updateProgress(toastId, 75);
-          await fetchDashboardData();
-          toast.completeWithSuccess(
-            toastId,
-            'Data collection completed!',
-            'GitHub data has been successfully collected and updated'
-          );
-        } catch (err) {
-          toast.completeWithError(
-            toastId,
-            'Failed to fetch updated data',
-            'Data was collected but failed to refresh dashboard'
-          );
-        }
-      }, 2000);
+      toast.updateProgress(toastId, 20);
+
+      const result = await apiService.triggerGithubDataCollection(token);
+
+      toast.updateProgress(toastId, 70);
+      await fetchDashboardData();
+      toast.updateProgress(toastId, 95);
+
+      const summary = result.summary;
+      const durationSeconds = summary
+        ? Math.max(summary.durationMs / 1000, 0.1).toFixed(1)
+        : null;
+
+      const summaryDescription = summary
+        ? `${summary.repositoriesProcessed}/${summary.repositoriesTotal} repos · +${summary.commitsNew} commits · PRs ${summary.prsCreated} new / ${summary.prsUpdated} updated · ${summary.reviewsNew} reviews · ${durationSeconds}s${summary.errors > 0 ? ` · ${summary.errors} repo errors` : ''}`
+        : 'GitHub data has been successfully collected and updated';
+
+      toast.completeWithSuccess(
+        toastId,
+        'Data collection completed!',
+        summaryDescription,
+      );
     } catch (err) {
       toast.completeWithError(
         toastId,

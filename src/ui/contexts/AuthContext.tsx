@@ -17,6 +17,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const persistAuthenticatedUser = (nextUser: User | null) => {
+    setUser(nextUser);
+
+    if (nextUser) {
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+      return;
+    }
+
+    localStorage.removeItem(USER_KEY);
+  };
+
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
@@ -25,16 +36,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (storedToken && storedUser) {
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          persistAuthenticatedUser(JSON.parse(storedUser));
 
           try {
             const profile = await apiService.getProfile(storedToken);
-            setUser(profile);
+            persistAuthenticatedUser(profile);
           } catch (error) {
             localStorage.removeItem(TOKEN_KEY);
             localStorage.removeItem(USER_KEY);
             setToken(null);
-            setUser(null);
+            persistAuthenticatedUser(null);
           }
         }
       } catch (error) {
@@ -52,10 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiService.login(credentials);
 
       setToken(response.access_token);
-      setUser(response.user);
+      persistAuthenticatedUser(response.user);
 
       localStorage.setItem(TOKEN_KEY, response.access_token);
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
     } catch (error) {
       if (error instanceof ApiError) {
         throw new Error(error.message);
@@ -69,10 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiService.register(data);
 
       setToken(response.access_token);
-      setUser(response.user);
+      persistAuthenticatedUser(response.user);
 
       localStorage.setItem(TOKEN_KEY, response.access_token);
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
     } catch (error) {
       if (error instanceof ApiError) {
         throw new Error(error.message);
@@ -81,11 +90,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshProfile = async (): Promise<User | null> => {
+    if (!token) return null;
+
+    const profile = await apiService.getProfile(token);
+    persistAuthenticatedUser(profile);
+    return profile;
+  };
+
+  const updateAuthenticatedUser = (nextUser: User) => {
+    persistAuthenticatedUser(nextUser);
+  };
+
   const logout = () => {
     setToken(null);
-    setUser(null);
+    persistAuthenticatedUser(null);
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
   };
 
   const value: AuthContextType = {
@@ -95,6 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     login,
     register,
+    refreshProfile,
+    updateAuthenticatedUser,
     logout,
   };
 

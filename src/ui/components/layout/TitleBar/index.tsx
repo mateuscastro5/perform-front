@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AlphaLogo from '@assets/AlphaLogo.png';
 import NavigationMenu from './NavigationMenu';
 import SearchBar from './SearchBar';

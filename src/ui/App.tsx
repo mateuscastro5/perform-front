@@ -3,7 +3,9 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DashboardProvider } from './contexts/DashboardContext';
 import { ProgressToastContainer } from './components/ui/ProgressToastContainer';
 import Dashboard from './pages/Dashboard';
-import Developers from './pages/Developers';
+import Profile from './pages/Profile';
+import Squads from './pages/Squads';
+import DeveloperProfile from './pages/DeveloperProfile';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -34,10 +36,26 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/developers"
+        path="/squads"
         element={
           <ProtectedRoute>
-            <Developers />
+            <Squads />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/developer/:id"
+        element={
+          <ProtectedRoute>
+            <DeveloperProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         }
       />

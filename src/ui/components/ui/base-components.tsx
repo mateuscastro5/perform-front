@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { cn, componentClasses, getColorClasses, type ColorVariant } from '../../lib/design-system';
 
@@ -45,7 +45,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
 
 Card.displayName = 'Card';
 
-interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag'> {
+interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragStart' | 'onDragEnd'> {
   variant?: 'primary' | 'secondary' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
@@ -66,7 +66,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     return (
-      <motion.button
+      <button
         ref={ref}
         className={cn(
           componentClasses.button,
@@ -76,8 +76,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         disabled={disabled || loading}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
         {...props}
       >
         {loading && (
@@ -88,7 +86,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           />
         )}
         {children}
-      </motion.button>
+      </button>
     );
   }
 );

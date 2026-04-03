@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent } from '@/ui/components/ui/card';
 import { Badge } from '@/ui/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/ui/components/ui/avatar';
@@ -8,7 +7,7 @@ import { GitPullRequest } from 'lucide-react';
 export type PRStatus = 'merged' | 'approved' | 'review_requested' | 'changes_requested' | 'draft' | 'closed';
 
 interface PRCardProps {
-  id: number;
+  id: number | string;
   title: string;
   author: {
     name: string;
@@ -16,7 +15,7 @@ interface PRCardProps {
   };
   status: PRStatus;
   createdAt: string;
-  branch: string;
+  branch?: string;
   additions: number;
   deletions: number;
   reviewers: Array<{
@@ -114,7 +113,7 @@ const PRCard = ({
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3 text-sm">
                 <span className="text-muted-foreground">{author.name}</span>
-                <span className="text-xs text-muted-foreground">{branch}</span>
+                <span className="text-xs text-muted-foreground">{branch ?? "unknown"}</span>
                 <div className="flex items-center gap-1 text-xs">
                   <span className="text-success">+{additions}</span>
                   <span className="text-destructive">-{deletions}</span>
@@ -152,7 +151,7 @@ const PRCard = ({
                 )}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>

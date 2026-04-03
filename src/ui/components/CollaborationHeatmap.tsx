@@ -1,5 +1,6 @@
 import { GitBranch, Users } from "lucide-react";
 import { useDashboard } from "../contexts/DashboardContext";
+import { motion } from "framer-motion";
 
 interface Developer {
   name: string;
@@ -23,13 +24,13 @@ export const CollaborationHeatmap = () => {
   
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="rounded-lg bg-accent/20 p-2">
+      <div className="rounded-xl border border-border/40 bg-transparent p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="rounded-lg bg-accent/10 p-2">
             <GitBranch className="h-4 w-4 text-accent" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Team Collaboration</h2>
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Team Collaboration</h2>
             <p className="text-[10px] text-muted-foreground">Loading...</p>
           </div>
         </div>
@@ -42,13 +43,13 @@ export const CollaborationHeatmap = () => {
 
   if (teamMembers.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="rounded-lg bg-accent/20 p-2">
+      <div className="rounded-xl border border-border/40 bg-transparent p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="rounded-lg bg-accent/10 p-2">
             <GitBranch className="h-4 w-4 text-accent" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Team Collaboration</h2>
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Team Collaboration</h2>
             <p className="text-[10px] text-muted-foreground">No data available</p>
           </div>
         </div>
@@ -62,20 +63,20 @@ export const CollaborationHeatmap = () => {
   const maxInteractions = Math.max(...interactions.map((i) => i.count), 1);
   
   return (
-    <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card h-[420px] flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-accent/20 p-2">
-            <GitBranch className="h-4 w-4 text-accent" />
+    <div className="rounded-xl border border-border/40 bg-transparent p-6 h-[420px] flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg bg-accent/10 p-2.5">
+            <GitBranch className="h-5 w-5 text-accent" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Team Collaboration</h2>
-            <p className="text-[10px] text-muted-foreground">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Team Collaboration</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
               {interactions.length} cross-reviews
             </p>
           </div>
         </div>
-        <Users className="h-4 w-4 text-muted-foreground" />
+        <Users className="h-5 w-5 text-muted-foreground/50" />
       </div>
 
       <div className="overflow-auto flex-1 flex items-center justify-center p-2">
@@ -84,7 +85,7 @@ export const CollaborationHeatmap = () => {
         <div />
         {teamMembers.map((member: string) => (
           <div key={member} className="text-center flex items-center justify-center min-h-[24px]">
-            <span className="text-[10px] font-medium text-muted-foreground truncate" title={member}>
+            <span className="text-xs font-medium text-muted-foreground truncate" title={member}>
               {member}
             </span>
           </div>
@@ -93,8 +94,8 @@ export const CollaborationHeatmap = () => {
         {/* Data Grid */}
         {teamMembers.map((fromMember: string, fromIndex: number) => (
           <div key={`row-${fromIndex}`} className="contents">
-            <div className="flex items-center justify-end pr-2 min-h-[48px]">
-              <span className="text-[10px] font-medium text-muted-foreground truncate" title={fromMember}>
+            <div className="flex items-center justify-end pr-3 min-h-[48px]">
+              <span className="text-xs font-medium text-muted-foreground truncate" title={fromMember}>
                 {fromMember}
               </span>
             </div>
@@ -106,9 +107,13 @@ export const CollaborationHeatmap = () => {
               const normalizedIntensity = intensity / maxInteractions;
               
               return (
-                <div
+                <motion.div
                   key={`cell-${fromIndex}-${toIndex}`}
-                  className="aspect-square rounded-md transition-all duration-300 hover:scale-105 cursor-pointer relative group"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: (fromIndex * teamMembers.length + toIndex) * 0.02 }}
+                  whileHover={{ scale: 1.1, zIndex: 10 }}
+                  className="aspect-square rounded-md cursor-pointer relative group shadow-sm"
                   style={{
                     backgroundColor: fromMember === toMember 
                       ? 'hsl(var(--muted))' 
@@ -122,11 +127,11 @@ export const CollaborationHeatmap = () => {
                   title={intensity > 0 ? `${fromMember} → ${toMember}: ${intensity} reviews` : ''}
                 >
                   {intensity > 0 && (
-                    <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-foreground opacity-0 group-hover:opacity-100">
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 rounded-md backdrop-blur-sm">
                       {intensity}
                     </span>
                   )}
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -134,18 +139,18 @@ export const CollaborationHeatmap = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/50 flex-shrink-0">
-        <div className="flex items-center gap-1">
-          <div className="h-2 w-2 rounded bg-primary" />
-          <span className="text-[9px] text-muted-foreground">High</span>
+      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border/50 flex-shrink-0 justify-center">
+        <div className="flex items-center gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-sm bg-primary shadow-sm" />
+          <span className="text-xs text-muted-foreground font-medium">High</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="h-2 w-2 rounded bg-accent" />
-          <span className="text-[9px] text-muted-foreground">Medium</span>
+        <div className="flex items-center gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-sm bg-accent shadow-sm" />
+          <span className="text-xs text-muted-foreground font-medium">Medium</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="h-2 w-2 rounded bg-muted" />
-          <span className="text-[9px] text-muted-foreground">Low</span>
+        <div className="flex items-center gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-sm bg-muted shadow-sm" />
+          <span className="text-xs text-muted-foreground font-medium">Low</span>
         </div>
       </div>
     </div>

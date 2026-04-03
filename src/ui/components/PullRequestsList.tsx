@@ -3,6 +3,7 @@ import { Badge } from "@/ui/components/ui/badge";
 import { GitPullRequest, GitMerge, Clock, XCircle } from "lucide-react";
 import { useDashboard } from "../contexts/DashboardContext";
 import { formatDistanceToNow } from "date-fns";
+import { motion } from "framer-motion";
 import type { PullRequest } from "../types/dashboard.types";
 import {
   Tooltip,
@@ -16,10 +17,10 @@ export const PullRequestsList = () => {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl bg-card/50 border border-border p-4 shadow-card backdrop-blur-sm h-full">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-foreground">Recent Pull Requests</h2>
-          <GitPullRequest className="h-4 w-4 text-accent" />
+      <div className="rounded-xl bg-transparent border border-border/40 p-6 h-full">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Pull Requests</h2>
+          <GitPullRequest className="h-4 w-4 text-muted-foreground/50" />
         </div>
         <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">
           <div className="animate-pulse">Loading pull requests...</div>
@@ -32,10 +33,10 @@ export const PullRequestsList = () => {
 
   if (prs.length === 0) {
     return (
-      <div className="rounded-xl bg-card/50 border border-border p-4 shadow-card backdrop-blur-sm h-full">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-foreground">Recent Pull Requests</h2>
-          <GitPullRequest className="h-4 w-4 text-accent" />
+      <div className="rounded-xl bg-transparent border border-border/40 p-6 h-full">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Pull Requests</h2>
+          <GitPullRequest className="h-4 w-4 text-muted-foreground/50" />
         </div>
         <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">
           No pull requests found
@@ -71,14 +72,14 @@ export const PullRequestsList = () => {
   
   return (
     <TooltipProvider>
-      <div className="rounded-xl bg-card/50 border border-border p-4 shadow-card backdrop-blur-sm flex flex-col h-[500px]">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-foreground">Recent Pull Requests</h2>
-          <GitPullRequest className="h-4 w-4 text-accent" />
+      <div className="rounded-xl bg-transparent border border-border/40 p-6 flex flex-col h-[500px]">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Pull Requests</h2>
+          <GitPullRequest className="h-5 w-5 text-muted-foreground/50" />
         </div>
 
-        <div className="space-y-2 flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent hover:scrollbar-thumb-accent/40">
-          {prs.map((pr: PullRequest) => {
+        <div className="space-y-3 flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent hover:scrollbar-thumb-accent/40">
+          {prs.map((pr: PullRequest, index: number) => {
             const updatedAgo = formatDistanceToNow(new Date(pr.updatedAt), {
               addSuffix: true,
             });
@@ -87,22 +88,26 @@ export const PullRequestsList = () => {
             });
 
             return (
-              <div
+              <motion.div
                 key={pr.id}
-                className="flex items-center gap-2 rounded-lg bg-muted/30 p-2.5 transition-all duration-200 hover:bg-muted/50 cursor-pointer"
-                onClick={() => window.open(pr.url, '_blank')}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                whileHover={{ scale: 1.01, x: 4 }}
+                className="flex items-center gap-3 rounded-lg bg-muted/20 p-3 transition-colors duration-200 hover:bg-muted/40 cursor-pointer border border-transparent hover:border-border/30"
+                onClick={() => pr.url && window.open(pr.url, '_blank')}
               >
-                <Avatar className="h-8 w-8 ring-2 ring-primary/20">
+                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
                   <AvatarImage src={pr.author.avatar} alt={pr.author.name} />
                   <AvatarFallback>{pr.author.name.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-semibold text-foreground mb-0.5 truncate">
+                  <h3 className="text-sm font-semibold text-foreground mb-1 truncate">
                     {pr.title}
                   </h3>
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
-                    <span>{pr.author.name}</span>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
+                    <span className="font-medium">{pr.author.name}</span>
                     <span>•</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -126,12 +131,12 @@ export const PullRequestsList = () => {
                     </Tooltip>
                   </div>
                   {pr.reviewers && pr.reviewers.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <div className="flex -space-x-1.5">
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <div className="flex -space-x-2">
                         {pr.reviewers.slice(0, 3).map((reviewer, idx) => (
                           <Tooltip key={idx}>
                             <TooltipTrigger asChild>
-                              <Avatar className="h-4 w-4 ring-1 ring-background">
+                              <Avatar className="h-5 w-5 ring-2 ring-background">
                                 <AvatarImage src={reviewer.avatar} alt={reviewer.name} />
                                 <AvatarFallback className="text-[8px]">
                                   {reviewer.name.split(" ").map((n: string) => n[0]).join("")}
@@ -141,14 +146,14 @@ export const PullRequestsList = () => {
                             <TooltipContent>
                               <p className="text-xs font-medium">{reviewer.name}</p>
                               <p className="text-[10px] text-muted-foreground capitalize">
-                                {reviewer.state.replace('_', ' ').toLowerCase()}
+                                {(reviewer.state ?? reviewer.status).replace('_', ' ').toLowerCase()}
                               </p>
                             </TooltipContent>
                           </Tooltip>
                         ))}
                       </div>
                       {pr.reviewers.length > 3 && (
-                        <span className="text-[9px] text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground font-medium bg-muted/50 px-1.5 rounded-full">
                           +{pr.reviewers.length - 3}
                         </span>
                       )}
@@ -159,7 +164,7 @@ export const PullRequestsList = () => {
                 <div className="flex items-center gap-1.5">
                   {getStatusBadge(pr)}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

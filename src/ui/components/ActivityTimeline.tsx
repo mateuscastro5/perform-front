@@ -1,6 +1,7 @@
 import { GitCommit, GitPullRequest, MessageSquare, GitMerge } from "lucide-react";
 import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import { apiService } from "../services/api.service";
 import { useDashboard } from "../contexts/DashboardContext";
@@ -116,14 +117,14 @@ export const ActivityTimeline = () => {
   };
   
   return (
-    <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 shadow-card flex flex-col h-[500px]">
-      <h2 className="text-lg font-bold text-foreground mb-4">Live Activity</h2>
+    <div className="rounded-xl border border-border/40 bg-transparent p-6 flex flex-col h-[500px]">
+      <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-6">Live Activity</h2>
       
       <div className="relative flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40">
         {/* Timeline Line */}
-        <div className="absolute left-3 top-0 bottom-0 w-px bg-border" />
+        <div className="absolute left-3 top-0 bottom-0 w-px bg-border/50" />
         
-        <div className="space-y-3 pb-2">
+        <div className="space-y-4 pb-2">
           {activities.map((activity, index) => {
             const Icon = getActivityIcon(activity);
             const color = getActivityColor(activity);
@@ -133,34 +134,40 @@ export const ActivityTimeline = () => {
             });
 
             return (
-              <div
+              <motion.div
                 key={activity.id}
-                className="relative pl-8 animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
+                className="relative pl-10"
               >
                 {/* Timeline Dot */}
-                <div className={`absolute left-0 mt-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-card ${color}`}>
-                  <Icon className="h-3 w-3" />
+                <div className={`absolute left-0 mt-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-card ${color} shadow-sm`}>
+                  <Icon className="h-3.5 w-3.5" />
                 </div>
 
                 {/* Activity Content */}
-                <div className="rounded-lg bg-muted/30 p-2.5 transition-all duration-200 hover:bg-muted/50">
-                  <div className="flex items-start justify-between gap-2">
+                <motion.div 
+                  whileHover={{ scale: 1.01, x: 4 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="rounded-lg bg-muted/20 p-3 transition-colors duration-200 hover:bg-muted/40 border border-transparent hover:border-border/30"
+                >
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground">
+                      <p className="text-sm font-medium text-foreground">
                         <span className="font-semibold">{activity.developer.name}</span>{" "}
-                        <span className="text-muted-foreground">{action}</span>
+                        <span className="text-muted-foreground font-normal">{action}</span>
                       </p>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                      <p className="text-xs text-muted-foreground truncate mt-1">
                         {activity.message}
                       </p>
                     </div>
-                    <span className="text-[9px] text-muted-foreground whitespace-nowrap">
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap font-medium bg-muted/30 px-2 py-0.5 rounded-full">
                       {timeAgo}
                     </span>
                   </div>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             );
           })}
         </div>
