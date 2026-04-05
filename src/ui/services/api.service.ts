@@ -11,6 +11,13 @@ import type {
   TeamActivityResponse,
   ProductivityResponse,
 } from '../types/dashboard.types';
+import type {
+  PrAnalysis,
+  DeveloperEvolution,
+  SquadXRay,
+  SubmitFeedback,
+  BatchAnalysisResult,
+} from '../types/analysis.types';
 
 const API_URL = 'http://localhost:3000';
 
@@ -551,6 +558,76 @@ export const apiService = {
       body: JSON.stringify({ squadId: normalizedSquadId }),
     });
     return handleResponse(response);
+  },
+
+  // AI Analysis API
+  async triggerPrAnalysis(token: string, prId: string): Promise<PrAnalysis> {
+    const response = await fetch(`${API_URL}/ai-analysis/trigger/${prId}`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse<PrAnalysis>(response);
+  },
+
+  async triggerBatchAnalysis(token: string, prIds: string[]): Promise<BatchAnalysisResult[]> {
+    const response = await fetch(`${API_URL}/ai-analysis/trigger-batch`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ githubPullRequestIds: prIds }),
+    });
+    return handleResponse<BatchAnalysisResult[]>(response);
+  },
+
+  async getPrAnalysis(token: string, prId: string): Promise<PrAnalysis | null> {
+    const response = await fetch(`${API_URL}/ai-analysis/pr/${prId}`, {
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse<PrAnalysis | null>(response);
+  },
+
+  async getDeveloperAnalyses(token: string, developerId: string, limit = 50): Promise<PrAnalysis[]> {
+    const url = new URL(`${API_URL}/ai-analysis/developer/${developerId}`);
+    url.searchParams.append('limit', limit.toString());
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse<PrAnalysis[]>(response);
+  },
+
+  async getDeveloperEvolution(token: string, developerId: string, days = 90): Promise<DeveloperEvolution> {
+    const url = new URL(`${API_URL}/ai-analysis/developer/${developerId}/evolution`);
+    url.searchParams.append('days', days.toString());
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse<DeveloperEvolution>(response);
+  },
+
+  async getSquadXRay(token: string, squadId: string, days = 30): Promise<SquadXRay> {
+    const url = new URL(`${API_URL}/ai-analysis/squad/${squadId}/report`);
+    url.searchParams.append('days', days.toString());
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse<SquadXRay>(response);
+  },
+
+  async submitAnalysisFeedback(token: string, analysisId: string, feedback: SubmitFeedback): Promise<PrAnalysis> {
+    const response = await fetch(`${API_URL}/ai-analysis/${analysisId}/feedback`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(feedback),
+    });
+    return handleResponse<PrAnalysis>(response);
+  },
+
+  async getDoubtfulAnalyses(token: string, limit = 50): Promise<PrAnalysis[]> {
+    const url = new URL(`${API_URL}/ai-analysis/doubtful`);
+    url.searchParams.append('limit', limit.toString());
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse<PrAnalysis[]>(response);
   },
 };
 
