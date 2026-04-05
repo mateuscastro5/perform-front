@@ -9,6 +9,8 @@ import DeveloperProfile from './pages/DeveloperProfile';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ComplexityDashboard from './pages/ComplexityDashboard';
+import SquadXRayView from './pages/SquadXRayView';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function AppRoutes() {
@@ -64,6 +66,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/complexity"
+        element={
+          <ProtectedRoute>
+            <ComplexityDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/squad/:id/xray"
+        element={
+          <ProtectedRoute>
+            <SquadXRayView />
           </ProtectedRoute>
         }
       />
