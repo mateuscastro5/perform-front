@@ -22,6 +22,8 @@ import {
   ExternalLink,
   Search,
   SlidersHorizontal,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { DashboardHeader } from '../components/DashboardHeader';
@@ -230,6 +232,9 @@ export default function DeveloperProfile() {
   const [prStatusFilter, setPrStatusFilter] = useState<PRStatus | 'all'>('all');
   const [aiAnalyses, setAiAnalyses] = useState<PrAnalysis[]>([]);
   const [aiEvolution, setAiEvolution] = useState<DeveloperEvolution | null>(null);
+  const [devPrUuids, setDevPrUuids] = useState<string[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id || githubDevelopers.length === 0) return;
@@ -272,6 +277,8 @@ export default function DeveloperProfile() {
             (displayName && (authorName === displayName || authorLogin === displayName))
           );
         });
+
+        setDevPrUuids(matched.map((pr) => pr.id));
 
         setDevPRs(
           matched.map((pr) => ({
@@ -331,6 +338,36 @@ export default function DeveloperProfile() {
     };
     fetchAiData();
   }, [developer, token]);
+
+  const refreshAiData = async () => {
+    if (!developer || !token) return;
+    try {
+      const [analyses, evolution] = await Promise.all([
+        apiService.getDeveloperAnalyses(token, developer.id, 50),
+        apiService.getDeveloperEvolution(token, developer.id, 90),
+      ]);
+      setAiAnalyses(analyses);
+      setAiEvolution(evolution);
+    } catch {
+      // silently fail
+    }
+  };
+
+  const handleAnalyzePRs = async () => {
+    if (!token || devPrUuids.length === 0 || isAnalyzing) return;
+    setIsAnalyzing(true);
+    setAnalyzeError(null);
+    try {
+      // Batch in chunks of 20 (API limit)
+      const ids = devPrUuids.slice(0, 20);
+      await apiService.triggerBatchAnalysis(token, ids);
+      await refreshAiData();
+    } catch (err: unknown) {
+      setAnalyzeError(err instanceof Error ? err.message : 'Analysis failed');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // ── Loading skeleton ──
   if (!developer) {
@@ -537,12 +574,29 @@ export default function DeveloperProfile() {
                 <BrainCircuit className="h-28 w-28 text-primary" />
               </div>
               <div className="relative z-10">
-                <div className="flex items-center gap-2.5 mb-4">
-                  <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                    <BrainCircuit className="h-4 w-4 text-primary" />
+                <div className="flex items-center justify-between gap-2.5 mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                      <BrainCircuit className="h-4 w-4 text-primary" />
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground">AI Performance Insights</h3>
                   </div>
-                  <h3 className="text-base font-semibold text-foreground">AI Performance Insights</h3>
+                  <button
+                    onClick={handleAnalyzePRs}
+                    disabled={isAnalyzing || devPrUuids.length === 0}
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isAnalyzing ? (
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    {isAnalyzing ? 'Analyzing…' : 'Analyze code'}
+                  </button>
                 </div>
+                {analyzeError && (
+                  <p className="text-xs text-red-400 mb-3">{analyzeError}</p>
+                )}
 
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-xl">
                   {aiInsights.summary}
