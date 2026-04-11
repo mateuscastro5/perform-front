@@ -32,24 +32,93 @@ import { apiService } from '../services/api.service';
 import { useUIStore, getSidebarOffset } from '../stores/uiStore';
 import type { GithubDeveloper } from '../types/github.types';
 import type { PullRequest, PRStatus } from '../types/dashboard.types';
+import type { PrAnalysis, DeveloperEvolution } from '../types/analysis.types';
 
-// ── Mock AI Insights ──────────────────────────────────────────
-const MOCK_AI_INSIGHTS = {
-  summary:
-    'Highly productive developer with a strong focus on backend architecture. Shows excellent consistency in code reviews and maintains a low bug-introduction rate.',
-  strengths: [
-    'Consistent commit patterns',
-    'High code review participation',
-    'Quick PR turnaround time',
-  ],
-  areasForImprovement: [
-    'Could add more unit tests to complex PRs',
-    'Documentation updates sometimes lag behind code changes',
-  ],
-  productivityScore: 92,
-  qualityScore: 88,
-  collaborationScore: 95,
-};
+// ── AI Insights derived from real analyses ────────────────────
+interface AiInsights {
+  summary: string;
+  strengths: string[];
+  areasForImprovement: string[];
+  complexityScore: number;   // avg PR complexity (0-100)
+  confidenceScore: number;   // avg AI confidence * 100
+  volumeScore: number;       // PR throughput score
+  hasData: boolean;
+}
+
+function deriveInsights(
+  analyses: import('../types/analysis.types').PrAnalysis[],
+  trend: string,
+): AiInsights {
+  if (!analyses.length) {
+    return {
+      summary: 'No analyzed PRs yet. Trigger an analysis on a PR to generate insights.',
+      strengths: [],
+      areasForImprovement: [],
+      complexityScore: 0,
+      confidenceScore: 0,
+      volumeScore: 0,
+      hasData: false,
+    };
+  }
+
+  const avgComplexity = Math.round(
+    analyses.reduce((s, a) => s + a.complexityScore, 0) / analyses.length,
+  );
+  const avgConfidence = Math.round(
+    analyses.reduce((s, a) => s + a.confidence, 0) / analyses.length * 100,
+  );
+
+  // Change type distribution
+  const typeCounts = analyses.reduce<Record<string, number>>((acc, a) => {
+    acc[a.changeType] = (acc[a.changeType] ?? 0) + 1;
+    return acc;
+  }, {});
+  const topType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'feature';
+
+  // Unique technologies
+  const techSet = new Set<string>();
+  analyses.forEach((a) => {
+    try { (JSON.parse(a.technologies) as string[]).forEach((t) => techSet.add(t)); } catch {}
+  });
+  const techList = [...techSet].slice(0, 3).join(', ') || 'multiple technologies';
+
+  const trendLabel = trend === 'improving' ? 'increasing complexity' : trend === 'declining' ? 'decreasing complexity' : 'stable complexity';
+  const complexityLabel = avgComplexity > 70 ? 'complex' : avgComplexity > 40 ? 'moderate' : 'low-complexity';
+
+  const summary = `Works primarily on ${topType} tasks with ${complexityLabel} PRs (avg score ${avgComplexity}/100). `
+    + `${techList ? `Main technologies: ${techList}. ` : ''}`
+    + `AI scoring shows ${trendLabel} over the tracked period, with ${avgConfidence}% average confidence in assessments.`;
+
+  const strengths: string[] = [];
+  const areasForImprovement: string[] = [];
+
+  if (avgConfidence >= 75) strengths.push('Consistent and predictable code changes (high AI confidence)');
+  if (topType === 'feature') strengths.push('Strong focus on feature delivery');
+  if (topType === 'refactor') strengths.push('Actively improves code quality through refactoring');
+  if (topType === 'test') strengths.push('Invests in test coverage');
+  if (trend === 'improving') strengths.push('Taking on increasingly complex work over time');
+  if (avgComplexity <= 50 && analyses.length >= 5) strengths.push('Delivers manageable, reviewable PRs');
+
+  if (avgConfidence < 60) areasForImprovement.push('PRs could benefit from more descriptive titles and descriptions');
+  if (avgComplexity > 75) areasForImprovement.push('Consider breaking large PRs into smaller reviewable units');
+  if (!typeCounts['test']) areasForImprovement.push('No test-only PRs detected — consider adding dedicated test coverage');
+  if (!typeCounts['docs'] && !typeCounts['refactor']) areasForImprovement.push('Technical debt and documentation PRs are underrepresented');
+
+  if (!strengths.length) strengths.push('Active contributor with analyzed PRs');
+  if (!areasForImprovement.length) areasForImprovement.push('Maintain current PR quality standards');
+
+  const volumeScore = Math.min(100, Math.round(analyses.length * 5));
+
+  return {
+    summary,
+    strengths: strengths.slice(0, 3),
+    areasForImprovement: areasForImprovement.slice(0, 2),
+    complexityScore: avgComplexity,
+    confidenceScore: avgConfidence,
+    volumeScore,
+    hasData: true,
+  };
+}
 
 // ── PR status config ──────────────────────────────────────────
 const PR_STATUS_CONFIG: Record<PRStatus, { label: string; dot: string; badge: string }> = {
@@ -159,6 +228,8 @@ export default function DeveloperProfile() {
   const [devReviews, setDevReviews] = useState<number | null>(null);
   const [prSearch, setPrSearch] = useState('');
   const [prStatusFilter, setPrStatusFilter] = useState<PRStatus | 'all'>('all');
+  const [aiAnalyses, setAiAnalyses] = useState<PrAnalysis[]>([]);
+  const [aiEvolution, setAiEvolution] = useState<DeveloperEvolution | null>(null);
 
   useEffect(() => {
     if (!id || githubDevelopers.length === 0) return;
@@ -243,6 +314,24 @@ export default function DeveloperProfile() {
     fetchDevPRs();
   }, [developer, token]);
 
+  // Fetch AI analyses and evolution for this developer
+  useEffect(() => {
+    if (!developer || !token) return;
+    const fetchAiData = async () => {
+      try {
+        const [analyses, evolution] = await Promise.all([
+          apiService.getDeveloperAnalyses(token, developer.id, 50),
+          apiService.getDeveloperEvolution(token, developer.id, 90),
+        ]);
+        setAiAnalyses(analyses);
+        setAiEvolution(evolution);
+      } catch {
+        // AI data is optional — silently fail
+      }
+    };
+    fetchAiData();
+  }, [developer, token]);
+
   // ── Loading skeleton ──
   if (!developer) {
     return (
@@ -264,9 +353,14 @@ export default function DeveloperProfile() {
   }
 
   // ── Derived values ──
-  const overallScore = Math.round(
-    (MOCK_AI_INSIGHTS.productivityScore + MOCK_AI_INSIGHTS.qualityScore + MOCK_AI_INSIGHTS.collaborationScore) / 3
-  );
+  const aiInsights = deriveInsights(aiAnalyses, aiEvolution?.trend ?? 'stable');
+  const overallScore = aiInsights.hasData
+    ? Math.round((aiInsights.complexityScore + aiInsights.confidenceScore + aiInsights.volumeScore) / 3)
+    : Math.round(
+        ((developer.stats.pullRequests > 0 ? 70 : 40) +
+          (developer.stats.mergedPRs > 0 ? 75 : 40) +
+          (developer.stats.reviews > 0 ? 65 : 40)) / 3,
+      );
   const tier = getPerformanceTier(overallScore);
   const sinceDate = new Date(developer.stats.period.since).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long',
@@ -451,41 +545,65 @@ export default function DeveloperProfile() {
                 </div>
 
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-xl">
-                  {MOCK_AI_INSIGHTS.summary}
+                  {aiInsights.summary}
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {/* Strengths */}
-                  <div>
-                    <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
-                      <Zap className="h-3.5 w-3.5 text-amber-400" />
-                      Strengths
-                    </h4>
-                    <ul className="space-y-2">
-                      {MOCK_AI_INSIGHTS.strengths.map((s, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                          {s}
-                        </li>
-                      ))}
-                    </ul>
+                {aiInsights.hasData ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {/* Strengths */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
+                        <Zap className="h-3.5 w-3.5 text-amber-400" />
+                        Strengths
+                      </h4>
+                      <ul className="space-y-2">
+                        {aiInsights.strengths.map((s, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {/* Areas for growth */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
+                        <TrendingUp className="h-3.5 w-3.5 text-blue-400" />
+                        Areas for Growth
+                      </h4>
+                      <ul className="space-y-2">
+                        {aiInsights.areasForImprovement.map((a, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                            {a}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  {/* Areas for growth */}
-                  <div>
-                    <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
-                      <TrendingUp className="h-3.5 w-3.5 text-blue-400" />
-                      Areas for Growth
-                    </h4>
-                    <ul className="space-y-2">
-                      {MOCK_AI_INSIGHTS.areasForImprovement.map((a, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                          {a}
-                        </li>
-                      ))}
-                    </ul>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-lg px-4 py-3 bg-muted/10">
+                    <BrainCircuit className="h-4 w-4 shrink-0" />
+                    Trigger an analysis on this developer's PRs to generate real insights.
                   </div>
-                </div>
+                )}
+
+                {/* Evolution trend badge */}
+                {aiEvolution && aiInsights.hasData && (
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground/60">Complexity trend:</span>
+                    <span className={`text-xs font-semibold flex items-center gap-1 ${
+                      aiEvolution.trend === 'improving' ? 'text-emerald-500' :
+                      aiEvolution.trend === 'declining' ? 'text-red-400' : 'text-muted-foreground'
+                    }`}>
+                      {aiEvolution.trend === 'improving' ? <ArrowUpRight className="h-3.5 w-3.5" /> :
+                       aiEvolution.trend === 'declining' ? <ArrowDownRight className="h-3.5 w-3.5" /> :
+                       <Minus className="h-3.5 w-3.5" />}
+                      {aiEvolution.trend.charAt(0).toUpperCase() + aiEvolution.trend.slice(1)}
+                    </span>
+                    <span className="text-xs text-muted-foreground/50">· {aiAnalyses.length} PR{aiAnalyses.length !== 1 ? 's' : ''} analyzed</span>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -501,40 +619,40 @@ export default function DeveloperProfile() {
               </h3>
               <div className="flex-1 flex flex-col justify-around gap-4">
                 <div className="flex items-center gap-4">
-                  <ScoreRing value={MOCK_AI_INSIGHTS.productivityScore} label="Productivity" color="#3b82f6" />
+                  <ScoreRing value={aiInsights.complexityScore} label="Complexity" color="#3b82f6" />
                   <div className="flex-1">
                     <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground/70">Velocity</span>
-                      <span className="font-semibold text-foreground">{MOCK_AI_INSIGHTS.productivityScore}%</span>
+                      <span className="text-muted-foreground/70">Avg PR Complexity</span>
+                      <span className="font-semibold text-foreground">{aiInsights.complexityScore}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${MOCK_AI_INSIGHTS.productivityScore}%` }} />
+                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${aiInsights.complexityScore}%` }} />
                     </div>
                   </div>
                 </div>
                 <div className="w-full h-px bg-border/30" />
                 <div className="flex items-center gap-4">
-                  <ScoreRing value={MOCK_AI_INSIGHTS.qualityScore} label="Quality" color="#10b981" />
+                  <ScoreRing value={aiInsights.confidenceScore} label="Confidence" color="#10b981" />
                   <div className="flex-1">
                     <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground/70">Code Quality</span>
-                      <span className="font-semibold text-foreground">{MOCK_AI_INSIGHTS.qualityScore}%</span>
+                      <span className="text-muted-foreground/70">AI Confidence</span>
+                      <span className="font-semibold text-foreground">{aiInsights.confidenceScore}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${MOCK_AI_INSIGHTS.qualityScore}%` }} />
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${aiInsights.confidenceScore}%` }} />
                     </div>
                   </div>
                 </div>
                 <div className="w-full h-px bg-border/30" />
                 <div className="flex items-center gap-4">
-                  <ScoreRing value={MOCK_AI_INSIGHTS.collaborationScore} label="Collab" color="#a855f7" />
+                  <ScoreRing value={aiInsights.volumeScore} label="Volume" color="#a855f7" />
                   <div className="flex-1">
                     <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground/70">Teamwork</span>
-                      <span className="font-semibold text-foreground">{MOCK_AI_INSIGHTS.collaborationScore}%</span>
+                      <span className="text-muted-foreground/70">PRs Analyzed</span>
+                      <span className="font-semibold text-foreground">{aiAnalyses.length}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
-                      <div className="h-full bg-violet-500 rounded-full" style={{ width: `${MOCK_AI_INSIGHTS.collaborationScore}%` }} />
+                      <div className="h-full bg-violet-500 rounded-full" style={{ width: `${aiInsights.volumeScore}%` }} />
                     </div>
                   </div>
                 </div>
