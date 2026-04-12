@@ -10,8 +10,8 @@ export default defineConfig({
     outDir: "dist-react",
   },
   server: {
-    port: 5123,
-    strictPort: true,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5123,
+    strictPort: false,
   },
   resolve: {
     alias: {
