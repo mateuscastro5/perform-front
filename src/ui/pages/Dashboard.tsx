@@ -409,34 +409,19 @@ export default function Dashboard() {
       };
     }
 
-    const prs = selectedDeveloperPrs.length;
-    const merged = selectedDeveloperPrs.filter((pr) => pr.status === "merged").length;
-    const commitsFromActivity = selectedDeveloperCommitEvents.length;
-    const commitsFromPrs = selectedDeveloperPrs.reduce((acc, pr) => acc + (pr.commitsCount ?? 1), 0);
-    const commits = commitsFromActivity > 0 ? commitsFromActivity : prs > 0 ? commitsFromPrs : 0;
-    const reviews = selectedDeveloperPrs.reduce((acc, pr) => {
-      return (
-        acc +
-        pr.reviewers.filter(
-          (reviewer) =>
-            reviewer.id === selectedDeveloper.id ||
-            reviewer.login === selectedDeveloper.handle ||
-            reviewer.name.toLowerCase() === selectedDeveloper.name.toLowerCase(),
-        ).length
-      );
-    }, 0);
-    const mergeRate = prs ? (merged / prs) * 100 : 0;
-
+    // Use the API-provided window stats so the modal numbers always match
+    // the row in the Engineering Overview table (both reflect the same
+    // 30-day backend query).
     return {
-      commits,
-      prs,
-      merged,
-      reviews,
-      mergeRate,
+      commits:    selectedDeveloper.commits,
+      prs:        selectedDeveloper.prs,
+      merged:     selectedDeveloper.merged,
+      reviews:    selectedDeveloper.reviews,
+      mergeRate:  selectedDeveloper.mergeRate,
       periodDays: selectedDeveloper.periodDays,
       periodSince: selectedDeveloper.periodSince,
     };
-  }, [selectedDeveloper, selectedDeveloperPrs, selectedDeveloperCommitEvents]);
+  }, [selectedDeveloper]);
 
   const insightTitle =
     selectedInsight === "prs"
@@ -996,7 +981,7 @@ export default function Dashboard() {
                     </Badge>
                   </div>
                   <DialogDescription>
-                    All metrics below are derived from the same PR/activity dataset shown in this modal.
+                    Counts reflect the last {selectedDeveloperSummary.periodDays} days; the PR list below shows the most recent matches in this window.
                   </DialogDescription>
                 </DialogHeader>
               </div>
@@ -1008,13 +993,13 @@ export default function Dashboard() {
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <Card className="border-border/60 bg-card/60">
                       <CardContent className="p-4">
-                        <p className="text-xs text-muted-foreground">Commits (activity + PRs)</p>
+                        <p className="text-xs text-muted-foreground">Commits</p>
                         <p className="text-2xl font-semibold mt-1">{selectedDeveloperSummary.commits}</p>
                       </CardContent>
                     </Card>
                     <Card className="border-border/60 bg-card/60">
                       <CardContent className="p-4">
-                        <p className="text-xs text-muted-foreground">PRs in dataset</p>
+                        <p className="text-xs text-muted-foreground">PRs</p>
                         <p className="text-2xl font-semibold mt-1">{selectedDeveloperSummary.prs}</p>
                       </CardContent>
                     </Card>

@@ -533,13 +533,13 @@ export default function DeveloperProfile() {
     year: 'numeric', month: 'long',
   });
 
-  // Compute real counts from fetched data (API stats may lag or be filtered differently)
-  const realPRCount   = devPRs.length > 0 ? devPRs.length            : developer.stats.pullRequests;
-  const realMerged    = devPRs.length > 0
-    ? devPRs.filter((p) => p.status === 'merged').length
-    : developer.stats.mergedPRs;
-  const realCommits   = devCommits !== null ? devCommits : developer.stats.commits;
-  const realReviews   = devReviews !== null ? devReviews : developer.stats.reviews;
+  // Always use API stats (last 30 days, server-side filter) so the numbers
+  // here match the Engineering Overview table on the dashboard. The locally
+  // fetched activity feed may span a different window and would diverge.
+  const realPRCount = developer.stats.pullRequests;
+  const realMerged  = developer.stats.mergedPRs;
+  const realCommits = developer.stats.commits;
+  const realReviews = developer.stats.reviews;
 
   // Status counts for filter pills
   const statusCounts = devPRs.reduce<Record<string, number>>((acc, pr) => {
