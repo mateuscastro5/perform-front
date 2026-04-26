@@ -299,7 +299,12 @@ export default function Dashboard() {
   ];
 
   const engineeringRows = useMemo(() => {
-    return githubDevelopers.map((developer, index) => {
+    return githubDevelopers
+    .filter((developer) => {
+      const u = developer.githubUsername ?? '';
+      return !u.includes('[bot]') && !u.includes('@') && u.length > 0;
+    })
+    .map((developer, index) => {
       const mergeRate = developer.stats.pullRequests
         ? (developer.stats.mergedPRs / developer.stats.pullRequests) * 100
         : 0;

@@ -10,7 +10,12 @@ const Developers = () => {
   const [selectedDeveloper, setSelectedDeveloper] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("developers");
 
-  const developers = githubDevelopers.map((dev) => ({
+  const developers = githubDevelopers
+    .filter((dev) => {
+      const u = dev.githubUsername ?? '';
+      return !u.includes('[bot]') && !u.includes('@') && u.length > 0;
+    })
+    .map((dev) => ({
     id: dev.id,
     name: dev.name,
     avatar: dev.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(dev.name)}&background=random`,
@@ -24,10 +29,11 @@ const Developers = () => {
     currentWork: "",
     email: dev.email,
     githubUsername: dev.githubUsername,
-    repositories: repositories.filter(repo => 
+    repositories: repositories.filter(repo =>
       true
     ),
-  }));
+  }))
+  .filter((dev) => (dev.activePRs + dev.commitsThisWeek + dev.reviewsPending) > 0);
 
   if (isLoading) {
     return (
