@@ -6,6 +6,7 @@ import {
   Github,
   Mail,
   Calendar,
+  GitCommitHorizontal,
   GitCommit,
   GitPullRequest,
   GitMerge,
@@ -24,6 +25,7 @@ import {
   SlidersHorizontal,
   RefreshCw,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { DashboardHeader } from '../components/DashboardHeader';
@@ -238,6 +240,11 @@ export default function DeveloperProfile() {
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [analyzeQueued, setAnalyzeQueued] = useState(0);
   const [analyzeBaseline, setAnalyzeBaseline] = useState(0);
+  const [isClearingMemory, setIsClearingMemory] = useState(false);
+  const [clearMemoryFeedback, setClearMemoryFeedback] = useState<string | null>(null);
+  const [isAnalyzingCommits, setIsAnalyzingCommits] = useState(false);
+  const [commitQueued, setCommitQueued] = useState(0);
+  const [commitBaseline, setCommitBaseline] = useState(0);
 
   useEffect(() => {
     if (!id || githubDevelopers.length === 0) return;
@@ -372,6 +379,26 @@ export default function DeveloperProfile() {
     }
   };
 
+  const handleClearMemory = async () => {
+    if (!token || !developer || isClearingMemory) return;
+    if (!window.confirm(`Clear all AI memory for ${developer.name}? This deletes their mem0 entries and cached insight snapshot. Past analyses (in pr_analyses) are kept.`)) return;
+    setIsClearingMemory(true);
+    setClearMemoryFeedback(null);
+    try {
+      const result = await apiService.clearDeveloperMemory(token, developer.id);
+      const deleted = (result as { memoriesDeleted?: number; deletedCount?: number; deleted?: number }).memoriesDeleted
+        ?? (result as { deletedCount?: number }).deletedCount
+        ?? (result as { deleted?: number }).deleted
+        ?? 0;
+      setClearMemoryFeedback(`Memory cleared (${deleted} entries removed). Re-run "Analyze code" to rebuild insights.`);
+      setServerInsights(null);
+    } catch (err) {
+      setClearMemoryFeedback(err instanceof Error ? `Failed: ${err.message}` : 'Failed to clear memory');
+    } finally {
+      setIsClearingMemory(false);
+    }
+  };
+
   const handleAnalyzePRs = async () => {
     if (!token || !developer || devPrUuids.length === 0 || isAnalyzing) return;
     setIsAnalyzing(true);
@@ -421,6 +448,56 @@ export default function DeveloperProfile() {
       clearTimeout(timeout);
     };
   }, [isAnalyzing, developer, token, analyzeBaseline, analyzeQueued]);
+
+  const handleAnalyzeCommits = async () => {
+    if (!token || !developer || isAnalyzingCommits) return;
+    setIsAnalyzingCommits(true);
+    setAnalyzeError(null);
+    try {
+      const unanalyzed = await apiService.getUnanalyzedCommits(token, developer.id, 10);
+      if (unanalyzed.length === 0) {
+        setAnalyzeError('No unanalyzed commits available for this developer.');
+        setIsAnalyzingCommits(false);
+        return;
+      }
+      setCommitBaseline(aiAnalyses.length);
+      setCommitQueued(unanalyzed.length);
+      await apiService.triggerCommitsBatch(token, unanalyzed.map((c) => c.id));
+    } catch (err: unknown) {
+      setAnalyzeError(err instanceof Error ? err.message : 'Commit analysis failed');
+      setIsAnalyzingCommits(false);
+      setCommitQueued(0);
+    }
+  };
+
+  // Poll while commit batch is running
+  useEffect(() => {
+    if (!isAnalyzingCommits || !developer || !token) return;
+    const expected = commitBaseline + commitQueued;
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await apiService.getDeveloperAnalyses(token, developer.id, 50);
+        setAiAnalyses(fresh);
+        if (fresh.length >= expected) {
+          clearInterval(interval);
+          setIsAnalyzingCommits(false);
+          setCommitQueued(0);
+          await refreshAiData(true);
+        }
+      } catch {
+        // keep polling on transient errors
+      }
+    }, 4000);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setIsAnalyzingCommits(false);
+      setCommitQueued(0);
+    }, 12 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isAnalyzingCommits, developer, token, commitBaseline, commitQueued]);
 
   // ── Loading skeleton ──
   if (!developer) {
@@ -634,23 +711,52 @@ export default function DeveloperProfile() {
                     </div>
                     <h3 className="text-base font-semibold text-foreground">AI Performance Insights</h3>
                   </div>
-                  <button
-                    onClick={handleAnalyzePRs}
-                    disabled={isAnalyzing || devPrUuids.length === 0}
-                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isAnalyzing ? (
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3.5 w-3.5" />
-                    )}
-                    {isAnalyzing
-                      ? `Analyzing… ${Math.max(0, aiAnalyses.length - analyzeBaseline)}/${analyzeQueued}`
-                      : 'Analyze code'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleClearMemory}
+                      disabled={isClearingMemory || isAnalyzing || isAnalyzingCommits}
+                      title="Wipe this developer's AI memory (mem0 + cached insight snapshot)"
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-destructive/30 bg-destructive/5 text-destructive/90 hover:bg-destructive/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isClearingMemory
+                        ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        : <Trash2 className="h-3.5 w-3.5" />}
+                      {isClearingMemory ? 'Clearing…' : 'Clear AI memory'}
+                    </button>
+                    <button
+                      onClick={handleAnalyzeCommits}
+                      disabled={isAnalyzingCommits || isAnalyzing || isClearingMemory}
+                      title="Analyze the developer's most recent unanalyzed commits (no PR required)"
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isAnalyzingCommits
+                        ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        : <GitCommitHorizontal className="h-3.5 w-3.5" />}
+                      {isAnalyzingCommits
+                        ? `Commits… ${Math.max(0, aiAnalyses.length - commitBaseline)}/${commitQueued}`
+                        : 'Analyze commits'}
+                    </button>
+                    <button
+                      onClick={handleAnalyzePRs}
+                      disabled={isAnalyzing || devPrUuids.length === 0 || isAnalyzingCommits || isClearingMemory}
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isAnalyzing ? (
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      {isAnalyzing
+                        ? `Analyzing… ${Math.max(0, aiAnalyses.length - analyzeBaseline)}/${analyzeQueued}`
+                        : 'Analyze PRs'}
+                    </button>
+                  </div>
                 </div>
                 {analyzeError && (
                   <p className="text-xs text-red-400 mb-3">{analyzeError}</p>
+                )}
+                {clearMemoryFeedback && (
+                  <p className="text-xs text-emerald-400 mb-3">{clearMemoryFeedback}</p>
                 )}
 
                 {(() => {

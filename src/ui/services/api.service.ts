@@ -658,6 +658,29 @@ export const apiService = {
     );
     return handleResponse<ClearMemoryResult>(response);
   },
+
+  async getUnanalyzedCommits(
+    token: string,
+    developerId: string,
+    limit = 20,
+  ): Promise<{ id: string; sha: string; message: string }[]> {
+    const url = new URL(`${API_URL}/ai-analysis/developer/${developerId}/unanalyzed-commits`);
+    url.searchParams.append('limit', String(limit));
+    const response = await fetch(url.toString(), { headers: getAuthHeaders(token) });
+    return handleResponse(response);
+  },
+
+  async triggerCommitsBatch(
+    token: string,
+    githubCommitIds: string[],
+  ): Promise<{ status: string; queued: number; message: string }> {
+    const response = await fetch(`${API_URL}/ai-analysis/trigger-commits-batch`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ githubCommitIds }),
+    });
+    return handleResponse(response);
+  },
 };
 
 export { ApiError };
