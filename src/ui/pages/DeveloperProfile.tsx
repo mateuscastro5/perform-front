@@ -34,7 +34,7 @@ import { apiService } from '../services/api.service';
 import { useUIStore, getSidebarOffset } from '../stores/uiStore';
 import type { GithubDeveloper } from '../types/github.types';
 import type { PullRequest, PRStatus } from '../types/dashboard.types';
-import type { PrAnalysis, DeveloperEvolution } from '../types/analysis.types';
+import type { PrAnalysis, DeveloperEvolution, DeveloperInsights } from '../types/analysis.types';
 
 // ── AI Insights derived from real analyses ────────────────────
 interface AiInsights {
@@ -232,6 +232,7 @@ export default function DeveloperProfile() {
   const [prStatusFilter, setPrStatusFilter] = useState<PRStatus | 'all'>('all');
   const [aiAnalyses, setAiAnalyses] = useState<PrAnalysis[]>([]);
   const [aiEvolution, setAiEvolution] = useState<DeveloperEvolution | null>(null);
+  const [serverInsights, setServerInsights] = useState<DeveloperInsights | null>(null);
   const [devPrUuids, setDevPrUuids] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -321,7 +322,7 @@ export default function DeveloperProfile() {
     fetchDevPRs();
   }, [developer, token]);
 
-  // Fetch AI analyses and evolution for this developer
+  // Fetch AI analyses, evolution and narrated insights for this developer
   useEffect(() => {
     if (!developer || !token) return;
     const fetchAiData = async () => {
@@ -335,11 +336,17 @@ export default function DeveloperProfile() {
       } catch {
         // AI data is optional — silently fail
       }
+      try {
+        const insights = await apiService.getDeveloperInsights(token, developer.id);
+        setServerInsights(insights);
+      } catch {
+        // Insights endpoint may be unavailable — silently fall back to derived
+      }
     };
     fetchAiData();
   }, [developer, token]);
 
-  const refreshAiData = async () => {
+  const refreshAiData = async (forceInsightsRefresh = false) => {
     if (!developer || !token) return;
     try {
       const [analyses, evolution] = await Promise.all([
@@ -348,6 +355,16 @@ export default function DeveloperProfile() {
       ]);
       setAiAnalyses(analyses);
       setAiEvolution(evolution);
+    } catch {
+      // silently fail
+    }
+    try {
+      const insights = await apiService.getDeveloperInsights(
+        token,
+        developer.id,
+        forceInsightsRefresh,
+      );
+      setServerInsights(insights);
     } catch {
       // silently fail
     }
@@ -361,7 +378,7 @@ export default function DeveloperProfile() {
       // Batch in chunks of 20 (API limit)
       const ids = devPrUuids.slice(0, 20);
       await apiService.triggerBatchAnalysis(token, ids);
-      await refreshAiData();
+      await refreshAiData(true);
     } catch (err: unknown) {
       setAnalyzeError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
@@ -598,66 +615,102 @@ export default function DeveloperProfile() {
                   <p className="text-xs text-red-400 mb-3">{analyzeError}</p>
                 )}
 
-                <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-xl">
-                  {aiInsights.summary}
-                </p>
+                {(() => {
+                  const useServer = serverInsights && serverInsights.memoryCount > 0;
+                  const summaryText = useServer ? serverInsights!.summary : aiInsights.summary;
+                  const strengthsList = useServer ? serverInsights!.strengths : aiInsights.strengths;
+                  const growthList = useServer ? serverInsights!.growthAreas : aiInsights.areasForImprovement;
+                  const techList = useServer ? serverInsights!.dominantTechnologies : [];
+                  const showCard = useServer || aiInsights.hasData;
+                  return (
+                    <>
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-xl">
+                        {summaryText}
+                      </p>
 
-                {aiInsights.hasData ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {/* Strengths */}
-                    <div>
-                      <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
-                        <Zap className="h-3.5 w-3.5 text-amber-400" />
-                        Strengths
-                      </h4>
-                      <ul className="space-y-2">
-                        {aiInsights.strengths.map((s, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                            {s}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    {/* Areas for growth */}
-                    <div>
-                      <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
-                        <TrendingUp className="h-3.5 w-3.5 text-blue-400" />
-                        Areas for Growth
-                      </h4>
-                      <ul className="space-y-2">
-                        {aiInsights.areasForImprovement.map((a, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                            {a}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-lg px-4 py-3 bg-muted/10">
-                    <BrainCircuit className="h-4 w-4 shrink-0" />
-                    Trigger an analysis on this developer's PRs to generate real insights.
-                  </div>
-                )}
+                      {showCard ? (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                              <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
+                                <Zap className="h-3.5 w-3.5 text-amber-400" />
+                                Strengths
+                              </h4>
+                              <ul className="space-y-2">
+                                {strengthsList.map((s, i) => (
+                                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                                    {s}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
+                                <TrendingUp className="h-3.5 w-3.5 text-blue-400" />
+                                Areas for Growth
+                              </h4>
+                              <ul className="space-y-2">
+                                {growthList.map((a, i) => (
+                                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                                    <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                                    {a}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
 
-                {/* Evolution trend badge */}
-                {aiEvolution && aiInsights.hasData && (
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground/60">Complexity trend:</span>
-                    <span className={`text-xs font-semibold flex items-center gap-1 ${
-                      aiEvolution.trend === 'improving' ? 'text-emerald-500' :
-                      aiEvolution.trend === 'declining' ? 'text-red-400' : 'text-muted-foreground'
-                    }`}>
-                      {aiEvolution.trend === 'improving' ? <ArrowUpRight className="h-3.5 w-3.5" /> :
-                       aiEvolution.trend === 'declining' ? <ArrowDownRight className="h-3.5 w-3.5" /> :
-                       <Minus className="h-3.5 w-3.5" />}
-                      {aiEvolution.trend.charAt(0).toUpperCase() + aiEvolution.trend.slice(1)}
-                    </span>
-                    <span className="text-xs text-muted-foreground/50">· {aiAnalyses.length} PR{aiAnalyses.length !== 1 ? 's' : ''} analyzed</span>
-                  </div>
-                )}
+                          {techList.length > 0 && (
+                            <div className="mt-5 flex flex-wrap items-center gap-2">
+                              <span className="text-xs text-muted-foreground/60 uppercase tracking-wider">
+                                Dominant tech:
+                              </span>
+                              {techList.map((t) => (
+                                <span
+                                  key={t}
+                                  className="text-xs px-2 py-1 rounded-md border border-primary/25 bg-primary/10 text-primary"
+                                >
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-lg px-4 py-3 bg-muted/10">
+                          <BrainCircuit className="h-4 w-4 shrink-0" />
+                          Trigger an analysis on this developer's PRs to generate real insights.
+                        </div>
+                      )}
+
+                      {(useServer || (aiEvolution && aiInsights.hasData)) && (
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted-foreground/60">Complexity trend:</span>
+                          {useServer && serverInsights!.trendNarrative ? (
+                            <span className="text-xs text-foreground/80">
+                              {serverInsights!.trendNarrative}
+                            </span>
+                          ) : aiEvolution ? (
+                            <span className={`text-xs font-semibold flex items-center gap-1 ${
+                              aiEvolution.trend === 'improving' ? 'text-emerald-500' :
+                              aiEvolution.trend === 'declining' ? 'text-red-400' : 'text-muted-foreground'
+                            }`}>
+                              {aiEvolution.trend === 'improving' ? <ArrowUpRight className="h-3.5 w-3.5" /> :
+                               aiEvolution.trend === 'declining' ? <ArrowDownRight className="h-3.5 w-3.5" /> :
+                               <Minus className="h-3.5 w-3.5" />}
+                              {aiEvolution.trend.charAt(0).toUpperCase() + aiEvolution.trend.slice(1)}
+                            </span>
+                          ) : null}
+                          <span className="text-xs text-muted-foreground/50">
+                            · {aiAnalyses.length} PR{aiAnalyses.length !== 1 ? 's' : ''} analyzed
+                            {useServer ? ` · ${serverInsights!.memoryCount} memories` : ''}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </motion.div>
 

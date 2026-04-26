@@ -17,6 +17,8 @@ import type {
   SquadXRay,
   SubmitFeedback,
   BatchAnalysisResult,
+  DeveloperInsights,
+  ClearMemoryResult,
 } from '../types/analysis.types';
 
 const API_URL = 'http://localhost:3000';
@@ -628,6 +630,33 @@ export const apiService = {
       headers: getAuthHeaders(token),
     });
     return handleResponse<PrAnalysis[]>(response);
+  },
+
+  async getDeveloperInsights(
+    token: string,
+    developerId: string,
+    refresh = false,
+  ): Promise<DeveloperInsights> {
+    const url = new URL(`${API_URL}/ai-analysis/developer/${developerId}/insights`);
+    if (refresh) url.searchParams.append('refresh', 'true');
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse<DeveloperInsights>(response);
+  },
+
+  async clearDeveloperMemory(
+    token: string,
+    developerId: string,
+  ): Promise<ClearMemoryResult> {
+    const response = await fetch(
+      `${API_URL}/ai-analysis/developer/${developerId}/memory`,
+      {
+        method: 'DELETE',
+        headers: getAuthHeaders(token),
+      },
+    );
+    return handleResponse<ClearMemoryResult>(response);
   },
 };
 

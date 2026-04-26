@@ -73,3 +73,20 @@ export interface BatchAnalysisResult {
   analysis?: PrAnalysis;
   error?: string;
 }
+
+export interface DeveloperInsights {
+  developerId: string;
+  summary: string;
+  strengths: string[];
+  growthAreas: string[];
+  dominantTechnologies: string[];
+  trendNarrative: string;
+  memoryCount: number;
+  generatedAt: string;
+  fromCache: boolean;
+}
+
+export interface ClearMemoryResult {
+  deletedMemories: number;
+  clearedSnapshot: boolean;
+}
