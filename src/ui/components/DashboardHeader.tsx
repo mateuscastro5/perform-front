@@ -60,7 +60,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Home", icon: LayoutDashboard, path: "/" },
   { id: "squads", label: "Squads", icon: Users, path: "/squads" },
-  { id: "projects", label: "Projects", icon: Briefcase, path: "/" },
+  { id: "complexity", label: "Complexity", icon: Briefcase, path: "/complexity" },
   { id: "profile", label: "Profile", icon: User, path: "/profile" },
   { id: "settings", label: "Settings", icon: Settings, path: "/settings" },
 ];
@@ -68,9 +68,17 @@ const NAV_ITEMS: NavItem[] = [
 const ACTIVE_LABEL: Record<string, string> = {
   home: "Home",
   squads: "Squads",
-  projects: "Projects",
+  complexity: "Complexity",
   profile: "Profile",
   settings: "Settings",
+};
+
+const ACTIVE_PATH: Record<string, string> = {
+  home: "/",
+  squads: "/squads",
+  complexity: "/complexity",
+  profile: "/profile",
+  settings: "/settings",
 };
 
 const SPRING = { type: "spring", stiffness: 280, damping: 28 } as const;
@@ -111,7 +119,10 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
     if (item.path) navigate(item.path);
   };
 
-  const breadcrumbItems: BreadcrumbItem[] = breadcrumb ?? [{ label: ACTIVE_LABEL[activeTab] ?? "Dashboard" }];
+  const breadcrumbItems: BreadcrumbItem[] = breadcrumb ?? [{
+    label: ACTIVE_LABEL[activeTab] ?? "Dashboard",
+    path: ACTIVE_PATH[activeTab],
+  }];
 
   return (
     <>
@@ -272,7 +283,10 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
         </div>
 
         {/* Main header row */}
-        <div className="relative z-10 h-[66px] px-6 flex items-center justify-between border-t border-border/25">
+        <div
+          className="relative z-10 h-[66px] px-6 flex items-center justify-between border-t border-border/25"
+          style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+        >
           {/* Breadcrumb — clickable */}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <button

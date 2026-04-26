@@ -236,6 +236,8 @@ export default function DeveloperProfile() {
   const [devPrUuids, setDevPrUuids] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [analyzeQueued, setAnalyzeQueued] = useState(0);
+  const [analyzeBaseline, setAnalyzeBaseline] = useState(0);
 
   useEffect(() => {
     if (!id || githubDevelopers.length === 0) return;
@@ -371,20 +373,54 @@ export default function DeveloperProfile() {
   };
 
   const handleAnalyzePRs = async () => {
-    if (!token || devPrUuids.length === 0 || isAnalyzing) return;
+    if (!token || !developer || devPrUuids.length === 0 || isAnalyzing) return;
     setIsAnalyzing(true);
     setAnalyzeError(null);
+    const ids = devPrUuids.slice(0, 20);
+    setAnalyzeBaseline(aiAnalyses.length);
+    setAnalyzeQueued(ids.length);
     try {
-      // Batch in chunks of 20 (API limit)
-      const ids = devPrUuids.slice(0, 20);
+      // Backend now returns immediately and processes in background.
       await apiService.triggerBatchAnalysis(token, ids);
-      await refreshAiData(true);
     } catch (err: unknown) {
       setAnalyzeError(err instanceof Error ? err.message : 'Analysis failed');
-    } finally {
       setIsAnalyzing(false);
+      setAnalyzeQueued(0);
+      return;
     }
   };
+
+  // Poll for new analyses while a background batch is running.
+  useEffect(() => {
+    if (!isAnalyzing || !developer || !token) return;
+    const expectedTotal = analyzeBaseline + analyzeQueued;
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await apiService.getDeveloperAnalyses(token, developer.id, 50);
+        setAiAnalyses(fresh);
+        if (fresh.length >= expectedTotal) {
+          clearInterval(interval);
+          setIsAnalyzing(false);
+          setAnalyzeQueued(0);
+          await refreshAiData(true);
+        }
+      } catch {
+        // keep polling on transient errors
+      }
+    }, 4000);
+
+    // Safety timeout: stop polling after 12 minutes
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setIsAnalyzing(false);
+      setAnalyzeQueued(0);
+    }, 12 * 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isAnalyzing, developer, token, analyzeBaseline, analyzeQueued]);
 
   // ── Loading skeleton ──
   if (!developer) {
@@ -608,7 +644,9 @@ export default function DeveloperProfile() {
                     ) : (
                       <Sparkles className="h-3.5 w-3.5" />
                     )}
-                    {isAnalyzing ? 'Analyzing…' : 'Analyze code'}
+                    {isAnalyzing
+                      ? `Analyzing… ${Math.max(0, aiAnalyses.length - analyzeBaseline)}/${analyzeQueued}`
+                      : 'Analyze code'}
                   </button>
                 </div>
                 {analyzeError && (
