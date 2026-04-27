@@ -8,17 +8,15 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   CalendarRange,
+  Circle,
+  Clock,
   ExternalLink,
   Filter,
   GitCommit,
   GitPullRequest,
   MessageSquare,
-  Radar,
-  Rocket,
   Search,
-  Signal,
   Sparkles,
-  Telescope,
 } from "lucide-react";
 import {
   Dialog,
@@ -251,7 +249,7 @@ export default function Dashboard() {
         setDetailedPrs(prs as DetailedPR[]);
         setRecentActivity(activity as RecentActivity[]);
       } catch (error) {
-        console.error("Failed to load mission telemetry:", error);
+        console.error("Failed to load dashboard data:", error);
       } finally {
         setDetailsLoading(false);
       }
@@ -293,7 +291,6 @@ export default function Dashboard() {
     {
       id: "prs" as const,
       title: "Pull Requests",
-      mission: "Orbit · Code Review",
       value: githubStats?.pullRequests.total ?? 0,
       helper: `${githubStats?.pullRequests.open ?? 0} open · ${githubStats?.pullRequests.merged ?? 0} merged`,
       series: prSeries,
@@ -303,7 +300,6 @@ export default function Dashboard() {
     {
       id: "commits" as const,
       title: "Commits",
-      mission: "Trajectory",
       value: commitCardValue,
       helper: `${commitCardWindowLabel} · ${githubStats?.commits.percentageChange.toFixed(1) ?? "0.0"}% vs last week`,
       series: commitSeries,
@@ -313,7 +309,6 @@ export default function Dashboard() {
     {
       id: "review" as const,
       title: "Awaiting Review",
-      mission: "Telescope Queue",
       value: githubStats?.pullRequests.awaitingReview ?? 0,
       helper: `${githubStats?.reviews.pending ?? 0} reviews pending`,
       series: reviewSeries,
@@ -434,12 +429,12 @@ export default function Dashboard() {
 
   const insightTitle =
     selectedInsight === "prs"
-      ? "Pull Requests · Orbit"
+      ? "Pull Requests"
       : selectedInsight === "commits"
-        ? "Commits · Trajectory"
+        ? "Commits"
         : selectedInsight === "review"
-          ? "Telescope Queue"
-          : "Mission Details";
+          ? "Awaiting Review"
+          : "Details";
 
   const insightTotal =
     selectedInsight === "prs"
@@ -568,55 +563,54 @@ export default function Dashboard() {
 
       <main className="relative z-10 pb-12 pl-[316px] pr-6 pt-[122px]">
         <div className="space-y-6">
-          {/* — Mission ticker ——————————————— */}
+          {/* — Top ticker + hero ——————————————— */}
           <div className="artemis-panel relative overflow-hidden rounded-[24px]">
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-border/30 px-6 py-3.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-border/30 px-6 py-3.5 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Signal className="h-3 w-3 text-success" />
-                <span>Telemetry · Live</span>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
+                </span>
+                <span>Live</span>
               </div>
               <Separator orientation="vertical" className="h-3" />
               <div className="flex items-center gap-2">
-                <span>Commits</span>
-                <span className="font-display text-foreground text-sm">{githubStats?.commits.thisWeek ?? 0}</span>
+                <span className="uppercase tracking-wide">Commits</span>
+                <span className="font-display text-sm text-foreground">{githubStats?.commits.thisWeek ?? 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span>Open PRs</span>
-                <span className="font-display text-foreground text-sm">{githubStats?.pullRequests.open ?? 0}</span>
+                <span className="uppercase tracking-wide">Open PRs</span>
+                <span className="font-display text-sm text-foreground">{githubStats?.pullRequests.open ?? 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span>Awaiting</span>
-                <span className="font-display text-foreground text-sm">{githubStats?.pullRequests.awaitingReview ?? 0}</span>
+                <span className="uppercase tracking-wide">Awaiting</span>
+                <span className="font-display text-sm text-foreground">{githubStats?.pullRequests.awaitingReview ?? 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span>Reviews</span>
-                <span className="font-display text-foreground text-sm">{githubStats?.reviews.total ?? 0}</span>
+                <span className="uppercase tracking-wide">Reviews</span>
+                <span className="font-display text-sm text-foreground">{githubStats?.reviews.total ?? 0}</span>
               </div>
               <div className="ml-auto flex items-center gap-2">
-                <Radar className="h-3 w-3 text-secondary" />
+                <Clock className="h-3 w-3" />
                 <span>Last sync · {isLoading ? "syncing..." : "just now"}</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 px-6 py-7 md:px-8 md:py-9 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div className="grid grid-cols-1 gap-6 px-6 py-8 md:px-8 md:py-10 lg:grid-cols-[1fr_auto] lg:items-end">
               <div>
-                <span className="artemis-tag mb-5">
-                  <Rocket className="h-3 w-3" /> Mission Brief · {new Date().toLocaleDateString()}
-                </span>
                 <h1 className="font-display text-[clamp(2.6rem,5.5vw,4rem)] font-light leading-[0.92] tracking-[-0.04em]">
-                  <span className="artemis-text-lunar">Live engineering</span>
+                  <span className="artemis-text-lunar">Engineering,</span>
                   <br />
-                  <span className="artemis-text-aurora">at lunar precision.</span>
+                  <span className="artemis-text-aurora">at a glance.</span>
                 </h1>
-                <p className="mt-5 max-w-xl text-sm text-muted-foreground leading-relaxed">
-                  Your fleet at a glance — every commit a thruster, every PR a maneuver,
-                  every review a course correction. Welcome to Mission Control.
+                <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                  Velocity, complexity and team health — together in one view, kept up to date.
                 </p>
               </div>
 
               {/* Decorative moon — desktop only */}
               <div className="hidden lg:block">
-                <MoonOrb size={170} phase="aurora" rings />
+                <MoonOrb size={180} variant="twilight" rings opacity={0.85} />
               </div>
             </div>
           </div>
@@ -647,8 +641,8 @@ export default function Dashboard() {
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-border/40 bg-card/40 text-foreground/85 transition-all group-hover:border-primary/40 group-hover:bg-primary/10 group-hover:text-primary">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">
-                      {card.mission}
+                    <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/70">
+                      Live
                     </span>
                   </div>
 
@@ -667,10 +661,10 @@ export default function Dashboard() {
                       }`}
                     >
                       {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                      {Math.abs(trendValue)} vector
+                      {Math.abs(trendValue)} trend
                     </span>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
-                      Open scope →
+                    <span className="text-[11px] text-muted-foreground/70">
+                      View details →
                     </span>
                   </div>
 
@@ -691,32 +685,29 @@ export default function Dashboard() {
           >
             <div className="flex items-center justify-between border-b border-border/30 px-7 py-5">
               <div>
-                <span className="artemis-tag">
-                  <Telescope className="h-3 w-3" /> Crew Telemetry
-                </span>
-                <h2 className="mt-3 font-display text-[34px] font-light leading-none tracking-[-0.025em]">
+                <h2 className="font-display text-[34px] font-light leading-none tracking-[-0.025em]">
                   Engineering Overview
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Click any operator to inspect their orbit.
+                  Click any developer for details.
                 </p>
               </div>
               <Badge variant="cosmic" className="hidden md:inline-flex">
-                {engineeringRows.length} crew on shift
+                {engineeringRows.length} developers
               </Badge>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full min-w-[980px]">
                 <thead>
-                  <tr className="border-b border-border/25 text-left font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">
-                    <th className="px-7 py-4 font-medium">Pos</th>
-                    <th className="px-7 py-4 font-medium">Operator</th>
+                  <tr className="border-b border-border/25 text-left text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+                    <th className="px-7 py-4 font-medium">#</th>
+                    <th className="px-7 py-4 font-medium">Developer</th>
                     <th className="px-7 py-4 font-medium">Commits</th>
                     <th className="px-7 py-4 font-medium">PRs</th>
                     <th className="px-7 py-4 font-medium">Merged</th>
                     <th className="px-7 py-4 font-medium">Reviews</th>
-                    <th className="px-7 py-4 font-medium">Trajectory</th>
+                    <th className="px-7 py-4 font-medium">Merge Rate</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -731,8 +722,8 @@ export default function Dashboard() {
                         className="group cursor-pointer border-b border-border/20 transition-colors hover:bg-primary/5"
                         onClick={() => setSelectedDeveloperId(row.id)}
                       >
-                        <td className="px-7 py-4 font-mono text-xs text-muted-foreground">
-                          #{String(row.index).padStart(2, "0")}
+                        <td className="px-7 py-4 text-xs text-muted-foreground">
+                          {String(row.index).padStart(2, "0")}
                         </td>
                         <td className="px-7 py-4">
                           <div className="flex items-center gap-3">
@@ -750,7 +741,7 @@ export default function Dashboard() {
                             </div>
                             <div>
                               <p className="text-sm font-medium leading-none">{row.name}</p>
-                              <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                              <p className="mt-1.5 text-xs text-muted-foreground">
                                 @{row.handle}
                               </p>
                             </div>
@@ -785,7 +776,7 @@ export default function Dashboard() {
                   {engineeringRows.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-7 py-12 text-center text-sm text-muted-foreground">
-                        Awaiting crew telemetry...
+                        No data yet.
                       </td>
                     </tr>
                   )}
@@ -803,19 +794,16 @@ export default function Dashboard() {
             <DialogHeader className="space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-                    Mission Drilldown
-                  </p>
-                  <DialogTitle className="mt-1 font-display text-2xl font-medium tracking-[-0.01em]">
+                  <DialogTitle className="font-display text-2xl font-medium tracking-[-0.01em]">
                     {insightTitle}
                   </DialogTitle>
                   <DialogDescription className="mt-1">
-                    Telemetry stream from GitHub analytics and persisted mission records.
+                    Data from GitHub analytics and stored records.
                   </DialogDescription>
                 </div>
                 <Badge variant="aurora" className="gap-1">
                   <Sparkles className="h-3.5 w-3.5" />
-                  {filteredInsightTotal} of {insightTotal} signals
+                  {filteredInsightTotal} of {insightTotal}
                 </Badge>
               </div>
 
@@ -825,17 +813,17 @@ export default function Dashboard() {
                   <Input
                     value={insightSearch}
                     onChange={(event) => setInsightSearch(event.target.value)}
-                    placeholder="Search by title, operator or ID..."
+                    placeholder="Search by title, author or ID..."
                     className="pl-9"
                   />
                 </div>
 
                 <Select value={insightAuthorFilter} onValueChange={setInsightAuthorFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Filter by operator" />
+                    <SelectValue placeholder="Filter by author" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All operators</SelectItem>
+                    <SelectItem value="all">All authors</SelectItem>
                     {authorOptions.map((author) => (
                       <SelectItem key={author} value={author}>{author}</SelectItem>
                     ))}
@@ -880,19 +868,19 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
                 <Card className="bg-background/40 shadow-none">
                   <CardContent className="p-3">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Window</p>
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Window</p>
                     <p className="mt-1 text-sm font-medium">{insightPeriodFilter === "0" ? "All time" : `Last ${insightPeriodFilter} days`}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-background/40 shadow-none">
                   <CardContent className="p-3">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Operator</p>
-                    <p className="mt-1 text-sm font-medium">{insightAuthorFilter === "all" ? "All operators" : insightAuthorFilter}</p>
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Author</p>
+                    <p className="mt-1 text-sm font-medium">{insightAuthorFilter === "all" ? "All authors" : insightAuthorFilter}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-background/40 shadow-none">
                   <CardContent className="p-3">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Search</p>
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Search</p>
                     <p className="mt-1 truncate text-sm font-medium">{insightSearch.trim() ? insightSearch : "No keyword"}</p>
                   </CardContent>
                 </Card>
@@ -945,7 +933,7 @@ export default function Dashboard() {
                   </Table>
                   {!detailsLoading && filteredPrs.length === 0 && (
                     <p className="py-6 text-center text-sm text-muted-foreground">
-                      No pull requests in this orbit. Try changing window, operator, status or search.
+                      No pull requests match the current filters.
                     </p>
                   )}
                 </CardContent>
@@ -956,7 +944,7 @@ export default function Dashboard() {
               <div className="space-y-4">
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Weekly Trajectory</CardTitle>
+                    <CardTitle className="text-base">Weekly Activity</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="rounded-xl border border-border/40 bg-background/30 p-4">
@@ -985,7 +973,7 @@ export default function Dashboard() {
 
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Recent Commit Stream</CardTitle>
+                    <CardTitle className="text-base">Recent Commits</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {filteredCommitEvents.slice(0, 40).map((activity) => (
@@ -1014,7 +1002,7 @@ export default function Dashboard() {
             {selectedInsight === "review" && (
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">PRs Awaiting Telescope</CardTitle>
+                  <CardTitle className="text-base">PRs Awaiting Review</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -1075,7 +1063,7 @@ export default function Dashboard() {
                           <AvatarFallback>{selectedDeveloper.name.slice(0, 1)}</AvatarFallback>
                         </Avatar>
                       </div>
-                      {selectedDeveloper.name} · Operator File
+                      {selectedDeveloper.name}
                     </DialogTitle>
                     <Badge variant="cosmic">
                       Window: last {selectedDeveloperSummary.periodDays} days
@@ -1305,7 +1293,7 @@ export default function Dashboard() {
                     ) : (
                       <Card className="bg-card/40">
                         <CardContent className="p-8 text-center text-sm text-muted-foreground">
-                          Select a PR from the left to inspect its orbit.
+                          Select a PR from the left to view details.
                         </CardContent>
                       </Card>
                     )}

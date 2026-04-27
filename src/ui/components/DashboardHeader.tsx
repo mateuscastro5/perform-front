@@ -5,13 +5,11 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
-  Compass,
-  Globe2,
+  GaugeCircle,
   Home,
+  LayoutDashboard,
   LogOut,
   Minus,
-  Orbit,
-  Radar,
   Settings,
   Square,
   User,
@@ -53,23 +51,21 @@ interface DashboardHeaderProps {
 type NavItem = {
   id: string;
   label: string;
-  /** Mission-themed sublabel — appears beneath the label when expanded. */
-  hint?: string;
   icon: ComponentType<{ className?: string }>;
   path?: string;
   badge?: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "home",       label: "Mission Control", hint: "Live engineering",  icon: Compass,         path: "/" },
-  { id: "squads",     label: "Squads",          hint: "Crews in orbit",    icon: Users,           path: "/squads" },
-  { id: "complexity", label: "Complexity",      hint: "Code gravity",      icon: Orbit,           path: "/complexity" },
-  { id: "profile",    label: "Profile",         hint: "Operator file",     icon: User,            path: "/profile" },
-  { id: "settings",   label: "Settings",        hint: "Mission config",    icon: Settings,        path: "/settings" },
+  { id: "home",       label: "Home",       icon: LayoutDashboard, path: "/" },
+  { id: "squads",     label: "Squads",     icon: Users,           path: "/squads" },
+  { id: "complexity", label: "Complexity", icon: GaugeCircle,     path: "/complexity" },
+  { id: "profile",    label: "Profile",    icon: User,            path: "/profile" },
+  { id: "settings",   label: "Settings",   icon: Settings,        path: "/settings" },
 ];
 
 const ACTIVE_LABEL: Record<string, string> = {
-  home: "Mission Control",
+  home: "Home",
   squads: "Squads",
   complexity: "Complexity",
   profile: "Profile",
@@ -95,8 +91,8 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W;
   const headerLeft = SIDEBAR_LEFT + sidebarWidth + SIDEBAR_GAP;
 
-  const roleLabel = user?.role?.replace("_", " ") ?? "Operator";
-  const displayName = user?.name ?? "Commander";
+  const roleLabel = user?.role?.replace("_", " ") ?? "User";
+  const displayName = user?.name ?? "User";
   const displayEmail = user?.email ?? "";
   const avatarFallback =
     displayName
@@ -123,7 +119,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
   };
 
   const breadcrumbItems: BreadcrumbItem[] = breadcrumb ?? [{
-    label: ACTIVE_LABEL[activeTab] ?? "Mission Control",
+    label: ACTIVE_LABEL[activeTab] ?? "Home",
     path: ACTIVE_PATH[activeTab],
   }];
 
@@ -160,7 +156,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
           {sidebarCollapsed ? (
             <ArtemisLogo withWordmark={false} size={36} />
           ) : (
-            <ArtemisLogo tagline="Mission Control" size={34} />
+            <ArtemisLogo size={34} />
           )}
         </div>
 
@@ -176,18 +172,14 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
               className="relative z-10 shrink-0 overflow-hidden border-b border-white/5"
             >
               <div className="px-6 pt-6 pb-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Welcome back
                 </p>
-                <p className="mt-3 font-display text-[34px] font-light leading-[0.92] tracking-[-0.03em] text-foreground">
-                  Cmdr. {displayName.split(" ")[0] ?? "Operator"}
+                <p className="mt-2 font-display text-[34px] font-light leading-[0.95] tracking-[-0.03em] text-foreground">
+                  {displayName.split(" ")[0] ?? "there"}
                 </p>
-                <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-                  </span>
-                  All systems nominal · {new Date().toLocaleDateString()}
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })}
                 </p>
               </div>
             </motion.div>
@@ -202,7 +194,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
           style={{ paddingBottom: "5rem" }}
         >
           {!sidebarCollapsed && (
-            <p className="px-2 pb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground/60">
+            <p className="px-2 pb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
               Navigation
             </p>
           )}
@@ -241,57 +233,22 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
                 </span>
                 {!sidebarCollapsed && (
                   <div className="relative z-10 flex flex-1 items-center justify-between">
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-medium leading-none">{item.label}</p>
-                      {item.hint && (
-                        <p className="mt-1.5 truncate font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground/70">
-                          {item.hint}
-                        </p>
+                    <p className="text-[14px] font-medium leading-none">{item.label}</p>
+                    <div className="flex items-center gap-2">
+                      {item.badge && (
+                        <span className="rounded-full border border-border/50 bg-card/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                          {item.badge}
+                        </span>
+                      )}
+                      {isActive && (
+                        <span className="h-5 w-[2px] rounded-full bg-primary shadow-[0_0_12px_hsl(258_92%_70%/0.7)]" />
                       )}
                     </div>
-                    {item.badge && (
-                      <span className="rounded-full border border-border/50 bg-card/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                        {item.badge}
-                      </span>
-                    )}
-                    {isActive && (
-                      <span className="ml-2 h-5 w-[2px] rounded-full bg-primary shadow-[0_0_12px_hsl(258_92%_70%/0.7)]" />
-                    )}
                   </div>
                 )}
               </button>
             );
           })}
-
-          {!sidebarCollapsed && (
-            <>
-              <div className="px-2 pt-6">
-                <p className="pb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground/60">
-                  Telemetry
-                </p>
-              </div>
-              <div className="mx-2 rounded-2xl border border-border/40 bg-card/30 p-4 backdrop-blur-md">
-                <div className="flex items-center gap-2">
-                  <Radar className="h-3.5 w-3.5 text-secondary" />
-                  <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                    Live Stream
-                  </p>
-                </div>
-                <p className="mt-2 font-display text-2xl font-light leading-none text-foreground">
-                  98.7%
-                </p>
-                <p className="mt-1.5 text-[11px] text-muted-foreground">
-                  Mission readiness
-                </p>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted/30">
-                  <div
-                    className="h-full bg-aurora-gradient"
-                    style={{ width: "98.7%" }}
-                  />
-                </div>
-              </div>
-            </>
-          )}
         </nav>
 
         {/* ── Bottom toggle ── */}
@@ -310,7 +267,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
             ) : (
               <>
                 <ChevronLeft className="h-4 w-4 shrink-0" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.18em]">Collapse</span>
+                <span className="text-[13px] font-medium">Collapse</span>
               </>
             )}
           </motion.button>
@@ -332,13 +289,9 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
 
         {/* Window controls strip */}
         <div
-          className="relative z-10 flex h-8 items-center justify-between px-3"
+          className="relative z-10 flex h-8 items-center justify-end px-2"
           style={{ WebkitAppRegion: "drag" } as CSSProperties}
         >
-          <div className="flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.24em] text-muted-foreground/80">
-            <Globe2 className="h-3 w-3" />
-            ARTEMIS · v1.0 · {new Date().toLocaleDateString()}
-          </div>
           <div className="flex" style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
             <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-muted/30" onClick={handleMinimize}>
               <Minus className="h-4 w-4" />
@@ -364,7 +317,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
               className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-muted/20 hover:text-foreground"
             >
               <Home className="h-3.5 w-3.5" />
-              <span className="font-mono text-[11px] uppercase tracking-[0.16em]">Mission</span>
+              <span>Home</span>
             </button>
             {breadcrumbItems.map((item, i) => (
               <div key={i} className="flex items-center gap-1.5">
@@ -387,7 +340,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
           <div className="flex items-center gap-3" style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
             <div className="relative w-[260px]">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Scan the mission..." className="h-10 rounded-xl pl-10" />
+              <Input placeholder="Search..." className="h-10 rounded-xl pl-10" />
               <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border/50 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline">
                 ⌘K
               </kbd>
@@ -409,7 +362,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-semibold leading-none">{displayName}</p>
-                    <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    <p className="mt-1 text-xs capitalize text-muted-foreground">
                       {roleLabel}
                     </p>
                   </div>
@@ -418,7 +371,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/profile")}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Operator File</span>
+                  <span>View profile</span>
                 </DropdownMenuItem>
                 {displayEmail && (
                   <DropdownMenuItem className="cursor-default opacity-70">
@@ -428,7 +381,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>End Mission</span>
+                  <span>Sign out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

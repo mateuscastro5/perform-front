@@ -1,7 +1,7 @@
 import { useState, FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Lock, Mail, Loader2, Rocket } from "lucide-react";
+import { ArrowRight, Github, Lock, Mail, Loader2 } from "lucide-react";
 
 import { useAuth } from "../contexts/AuthContext";
 import { Input } from "@/ui/components/ui/input";
@@ -30,7 +30,7 @@ const Login = () => {
     try {
       await login({ email, password });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign in to Mission Control");
+      setError(err instanceof Error ? err.message : "Failed to sign in");
     } finally {
       setIsSubmitting(false);
     }
@@ -38,37 +38,41 @@ const Login = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      {/* — Cosmic backdrop ————————————————————————————— */}
+      {/* Cosmic backdrop — purely decorative, low contrast against content */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <StarField className="absolute inset-0" density={1.1} />
-        <Aurora intensity="medium" />
-        <Comet top="14%" duration={11} delay="-2s" size="lg" />
-        <Comet top="62%" duration={14} delay="-7s" size="md" angle={-12} />
+        <StarField className="absolute inset-0 opacity-60" density={0.7} />
+        <Aurora intensity="soft" />
+
+        {/* Hero planet — sits far to the right, mostly off-screen, behind everything.
+            This is the "grand" centerpiece à la Comet / Perplexity. */}
+        <div className="absolute -right-[32vw] top-1/2 hidden -translate-y-1/2 lg:block">
+          <MoonOrb size={920} variant="twilight" rings opacity={0.55} />
+        </div>
+
+        {/* Smaller violet companion behind the form — adds depth */}
+        <div className="absolute right-[18vw] top-[18%] hidden -translate-y-1/2 xl:block">
+          <MoonOrb size={220} variant="rose" rings={false} opacity={0.45} float />
+        </div>
+
+        <Comet top="22%" duration={14} delay="-3s" size="lg" />
+        <Comet top="68%" duration={18} delay="-9s" size="md" angle={-10} />
+
+        {/* Soft vignette so content stays legible */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,hsl(var(--background)/0.85)_100%)]" />
       </div>
 
-      {/* — Top bar ———————————————————————————————————— */}
       <header className="relative z-10 flex items-center justify-between px-8 py-6 lg:px-12">
-        <ArtemisLogo tagline="Mission Control" />
-        <div className="flex items-center gap-3 text-xs">
-          <span className="artemis-tag artemis-tag-live">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-            </span>
-            Mission Live
-          </span>
-          <span className="hidden text-muted-foreground sm:inline">
-            New to Artemis?{" "}
-            <Link to="/register" className="font-medium text-foreground hover:text-primary transition-colors">
-              Request access →
-            </Link>
-          </span>
-        </div>
+        <ArtemisLogo />
+        <span className="hidden text-sm text-muted-foreground sm:inline">
+          New here?{" "}
+          <Link to="/register" className="font-medium text-foreground transition-colors hover:text-primary">
+            Create an account →
+          </Link>
+        </span>
       </header>
 
-      {/* — Main grid ——————————————————————————————————— */}
-      <main className="relative z-10 grid min-h-[calc(100vh-7rem)] grid-cols-1 items-center gap-8 px-6 pb-12 pt-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:px-16">
-        {/* — Left: Hero copy + Moon ————————————————————— */}
+      <main className="relative z-10 mx-auto grid min-h-[calc(100vh-7rem)] w-full max-w-7xl grid-cols-1 items-center gap-10 px-6 pb-12 pt-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-12">
+        {/* Left — hero copy */}
         <section className="relative flex flex-col justify-center">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -76,27 +80,31 @@ const Login = () => {
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="max-w-xl"
           >
-            <span className="artemis-tag mb-6">
-              <Rocket className="h-3 w-3" /> Artemis · Engineering Intelligence
+            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/30 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" />
+              Engineering intelligence
             </span>
-            <h1 className="font-display text-[clamp(2.6rem,6vw,4.8rem)] font-light leading-[0.95] tracking-[-0.035em] text-balance">
-              <span className="artemis-text-lunar">Where engineering</span>
+            <h1 className="mt-6 font-display text-[clamp(2.4rem,5.4vw,4.4rem)] font-light leading-[0.98] tracking-[-0.035em] text-balance">
+              <span className="artemis-text-lunar">A calmer way to see</span>
               <br />
-              <span className="artemis-text-aurora">meets the stars.</span>
+              <span className="artemis-text-aurora">how your team ships.</span>
             </h1>
-            <p className="mt-6 max-w-md text-base text-muted-foreground leading-relaxed">
-              Welcome to Mission Control. Track velocity, complexity and mission readiness across
-              every squad — with the calm of deep space and the precision of a lunar landing.
+            <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground">
+              Track velocity, complexity and team health across every squad —
+              with the focused, quiet interface your engineering org deserves.
             </p>
 
-            <dl className="mt-10 grid grid-cols-3 gap-4 max-w-md">
+            <dl className="mt-10 grid max-w-md grid-cols-3 gap-3">
               {[
-                { k: "Squads", v: "ALL" },
+                { k: "Squads", v: "All" },
                 { k: "Latency", v: "12ms" },
                 { k: "Uptime", v: "99.98%" },
               ].map((item) => (
-                <div key={item.k} className="rounded-xl border border-border/40 bg-card/30 px-3 py-3 backdrop-blur-md">
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                <div
+                  key={item.k}
+                  className="rounded-xl border border-border/40 bg-card/30 px-3 py-3 backdrop-blur-md transition-colors hover:border-border/70"
+                >
+                  <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                     {item.k}
                   </dt>
                   <dd className="mt-1 font-display text-lg text-foreground">{item.v}</dd>
@@ -104,56 +112,43 @@ const Login = () => {
               ))}
             </dl>
           </motion.div>
-
-          {/* Floating moon — only on lg+ screens, peeking from behind */}
-          <div className="pointer-events-none absolute -bottom-24 -left-24 hidden lg:block">
-            <MoonOrb size={420} phase="lunar" />
-          </div>
         </section>
 
-        {/* — Right: Sign-In Card ———————————————————————— */}
+        {/* Right — sign-in card (floats over the planet) */}
         <section className="relative flex items-center justify-center">
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            initial={{ opacity: 0, y: 24, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-md"
+            className="relative w-full max-w-[420px]"
           >
-            {/* Aurora glow behind card */}
+            {/* Soft aurora wash directly behind the card */}
             <div
               aria-hidden
-              className="absolute -inset-1 rounded-[28px] bg-aurora-gradient opacity-40 blur-2xl"
+              className="absolute -inset-2 rounded-[32px] bg-aurora-gradient opacity-30 blur-3xl"
             />
 
             <div className="artemis-panel relative overflow-hidden rounded-[28px] p-8 sm:p-10">
               {/* Top inner highlight */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"
-              />
-              {/* Decorative orbital ring */}
-              <div
-                aria-hidden
-                className="artemis-orbit-ring -right-32 -top-32 h-64 w-64 opacity-50"
+                className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
               />
 
               <div className="relative">
-                <div className="mb-7 flex items-center justify-between">
-                  <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-                      Mission Sign-in
-                    </p>
-                    <h2 className="mt-2 font-display text-3xl font-medium tracking-[-0.01em]">
-                      Begin Sequence
-                    </h2>
-                  </div>
-                  <ArtemisLogo withWordmark={false} size={36} />
+                <div className="mb-7">
+                  <h2 className="font-display text-[28px] font-medium leading-tight tracking-[-0.01em]">
+                    Welcome back
+                  </h2>
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    Sign in to continue to your dashboard.
+                  </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                      Operator ID
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-xs text-muted-foreground">
+                      Email
                     </Label>
                     <div className="relative">
                       <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
@@ -164,21 +159,21 @@ const Login = () => {
                         autoComplete="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="commander@artemis.io"
+                        placeholder="you@company.com"
                         disabled={isSubmitting}
                         className="pl-10"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                        Access Code
+                      <Label htmlFor="password" className="text-xs text-muted-foreground">
+                        Password
                       </Label>
                       <a
                         href="#"
-                        className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                        className="text-[11px] text-muted-foreground transition-colors hover:text-foreground"
                       >
                         Forgot?
                       </a>
@@ -214,40 +209,42 @@ const Login = () => {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        Engaging thrusters...
+                        Signing in...
                       </>
                     ) : (
                       <>
-                        Launch Mission
+                        Sign in
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </>
                     )}
                   </Button>
                 </form>
 
-                <div className="my-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                <div className="my-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                   <span className="artemis-divider flex-1" />
                   <span>or</span>
                   <span className="artemis-divider flex-1" />
                 </div>
 
                 <Button variant="secondary" size="lg" className="w-full" disabled>
-                  <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    SSO · GitHub coming soon
+                  <Github className="h-4 w-4" />
+                  <span>Continue with GitHub</span>
+                  <span className="ml-1 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
+                    soon
                   </span>
                 </Button>
 
                 <p className="mt-7 text-center text-xs text-muted-foreground sm:hidden">
-                  New to Artemis?{" "}
+                  New here?{" "}
                   <Link to="/register" className="font-medium text-foreground hover:text-primary">
-                    Request access
+                    Create an account
                   </Link>
                 </p>
               </div>
             </div>
 
-            <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground/70">
-              © 2026 Artemis Mission Control · All systems nominal
+            <p className="mt-6 text-center text-[11px] text-muted-foreground/70">
+              © {new Date().getFullYear()} Artemis · Built for engineering teams
             </p>
           </motion.div>
         </section>

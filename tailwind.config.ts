@@ -70,12 +70,11 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Artemis mission palette aliases
+        // Brand palette aliases — three-stop aurora (violet → iris → rose)
         aurora: {
-          violet: "hsl(258 92% 70%)",
-          cyan: "hsl(196 96% 64%)",
-          gold: "hsl(41 92% 64%)",
-          rose: "hsl(330 90% 70%)",
+          violet: "hsl(262 88% 68%)",
+          iris: "hsl(232 78% 64%)",
+          rose: "hsl(320 76% 70%)",
         },
         lunar: {
           50: "hsl(220 22% 96%)",

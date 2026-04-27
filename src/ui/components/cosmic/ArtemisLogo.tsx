@@ -30,17 +30,17 @@ export function ArtemisLogo({
       >
         <defs>
           <linearGradient id="artemis-aurora" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(258 92% 72%)" />
-            <stop offset="55%" stopColor="hsl(196 96% 64%)" />
-            <stop offset="100%" stopColor="hsl(41 92% 64%)" />
+            <stop offset="0%" stopColor="hsl(262 88% 70%)" />
+            <stop offset="50%" stopColor="hsl(232 78% 64%)" />
+            <stop offset="100%" stopColor="hsl(320 76% 70%)" />
           </linearGradient>
           <linearGradient id="artemis-moon" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="hsl(220 22% 96%)" />
-            <stop offset="100%" stopColor="hsl(232 22% 56%)" />
+            <stop offset="100%" stopColor="hsl(262 28% 60%)" />
           </linearGradient>
           <radialGradient id="artemis-glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="hsl(258 92% 70% / 0.55)" />
-            <stop offset="70%" stopColor="hsl(258 92% 70% / 0)" />
+            <stop offset="0%" stopColor="hsl(262 88% 68% / 0.55)" />
+            <stop offset="70%" stopColor="hsl(262 88% 68% / 0)" />
           </radialGradient>
         </defs>
 
@@ -85,8 +85,8 @@ export function ArtemisLogo({
         />
 
         {/* Satellite dot on the orbital ring */}
-        <circle cx="56" cy="20.5" r="2.2" fill="hsl(196 96% 80%)" />
-        <circle cx="56" cy="20.5" r="4" fill="hsl(196 96% 64% / 0.4)" />
+        <circle cx="56" cy="20.5" r="2.2" fill="hsl(232 92% 84%)" />
+        <circle cx="56" cy="20.5" r="4" fill="hsl(232 78% 64% / 0.4)" />
       </svg>
 
       {withWordmark && (

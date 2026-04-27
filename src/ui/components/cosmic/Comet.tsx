@@ -49,13 +49,13 @@ export function Comet({
         className="block h-full w-full rounded-full"
         style={{
           background:
-            "linear-gradient(90deg, transparent, hsl(196 96% 78% / 0.85), hsl(258 92% 78% / 0.7) 70%, hsl(0 0% 100%) 100%)",
-          filter: "drop-shadow(0 0 10px hsl(258 92% 75% / 0.7)) drop-shadow(0 0 4px hsl(196 96% 70% / 0.6))",
+            "linear-gradient(90deg, transparent, hsl(232 80% 80% / 0.7), hsl(262 90% 80% / 0.85) 70%, hsl(0 0% 100%) 100%)",
+          filter: "drop-shadow(0 0 10px hsl(262 88% 78% / 0.6)) drop-shadow(0 0 4px hsl(232 78% 70% / 0.5))",
         }}
       />
       <span
         className="absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-white"
-        style={{ boxShadow: "0 0 12px 4px hsl(196 96% 75% / 0.9), 0 0 28px 8px hsl(258 92% 70% / 0.65)" }}
+        style={{ boxShadow: "0 0 12px 4px hsl(262 90% 80% / 0.85), 0 0 28px 8px hsl(232 78% 64% / 0.55)" }}
       />
     </span>
   );

@@ -50,7 +50,7 @@ export function StarField({ className, density = 1, speed = 1, staticField }: St
         phase: Math.random() * Math.PI * 2,
         speed: 0.6 + Math.random() * 1.6,
         drift: (Math.random() - 0.5) * 0.04,
-        hue: Math.random() < 0.12 ? 258 : Math.random() < 0.18 ? 196 : 220,
+        hue: Math.random() < 0.12 ? 262 : Math.random() < 0.18 ? 232 : 220,
       }));
     };
 

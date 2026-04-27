@@ -25,20 +25,20 @@
     --popover: 232 28% 9%;
     --popover-foreground: 220 30% 96%;
 
-    /* Aurora violet — primary mission accent */
-    --primary: 258 92% 70%;
+    /* Aurora violet — primary brand */
+    --primary: 262 88% 68%;
     --primary-foreground: 232 38% 6%;
 
-    /* Comet cyan — secondary signal */
-    --secondary: 196 96% 64%;
+    /* Iris — secondary brand (deep blue-violet, not bright cyan) */
+    --secondary: 232 78% 64%;
     --secondary-foreground: 232 38% 6%;
 
-    /* Stardust — muted neutrals */
+    /* Subtle neutral surface */
     --muted: 232 22% 14%;
     --muted-foreground: 222 14% 66%;
 
-    /* Lunar gold — highlight / accent */
-    --accent: 41 92% 64%;
+    /* Soft rose — single accent (replaces gold) */
+    --accent: 320 76% 70%;
     --accent-foreground: 232 38% 6%;
 
     /* Mars red — destructive */
@@ -55,32 +55,32 @@
 
     --border: 232 22% 18%;
     --input: 232 22% 14%;
-    --ring: 258 92% 70%;
+    --ring: 262 88% 68%;
 
     --radius: 1.25rem;
 
     /* Sidebar — slightly deeper than card to create elevation */
     --sidebar-background: 232 36% 4%;
     --sidebar-foreground: 220 30% 96%;
-    --sidebar-primary: 258 92% 70%;
+    --sidebar-primary: 262 88% 68%;
     --sidebar-primary-foreground: 232 38% 6%;
     --sidebar-accent: 232 30% 9%;
     --sidebar-accent-foreground: 220 30% 96%;
     --sidebar-border: 232 22% 16%;
-    --sidebar-ring: 258 92% 70%;
+    --sidebar-ring: 262 88% 68%;
 
-    /* Mission gradients (used by .artemis-* utilities) */
-    --gradient-aurora: linear-gradient(135deg, hsl(258 92% 70% / 1), hsl(196 96% 64% / 1) 55%, hsl(41 92% 64% / 1));
-    --gradient-nebula: radial-gradient(ellipse at 30% 20%, hsl(258 90% 32% / 0.55), transparent 55%),
-                       radial-gradient(ellipse at 80% 0%, hsl(196 90% 30% / 0.4), transparent 55%),
-                       radial-gradient(ellipse at 50% 100%, hsl(280 70% 22% / 0.45), transparent 60%);
-    --gradient-moon: radial-gradient(circle at 35% 30%, hsl(220 18% 92%), hsl(232 18% 56%) 55%, hsl(232 35% 14%) 92%);
-    --gradient-comet: linear-gradient(90deg, transparent, hsl(196 96% 78% / 0.9), hsl(258 92% 78% / 0.6), transparent);
+    /* Brand gradients — three-stop violet → iris → rose. No yellow. */
+    --gradient-aurora: linear-gradient(135deg, hsl(262 88% 68%), hsl(232 78% 64%) 50%, hsl(320 76% 70%));
+    --gradient-nebula: radial-gradient(ellipse at 30% 20%, hsl(262 80% 28% / 0.55), transparent 55%),
+                       radial-gradient(ellipse at 80% 0%, hsl(232 70% 22% / 0.45), transparent 55%),
+                       radial-gradient(ellipse at 50% 100%, hsl(320 60% 22% / 0.35), transparent 60%);
+    --gradient-moon: radial-gradient(circle at 32% 28%, hsl(262 80% 86%), hsl(262 60% 60%) 35%, hsl(232 50% 22%) 80%);
+    --gradient-comet: linear-gradient(90deg, transparent, hsl(232 80% 80% / 0.9), hsl(262 90% 80% / 0.7), transparent);
 
-    /* Mission glows */
-    --glow-aurora: 0 0 60px hsl(258 92% 70% / 0.35), 0 0 24px hsl(258 92% 70% / 0.25);
-    --glow-comet: 0 0 50px hsl(196 96% 64% / 0.32);
-    --glow-lunar: 0 0 80px hsl(41 92% 64% / 0.18);
+    /* Glows */
+    --glow-aurora: 0 0 80px hsl(262 88% 68% / 0.32), 0 0 32px hsl(262 88% 68% / 0.22);
+    --glow-comet: 0 0 60px hsl(232 78% 64% / 0.28);
+    --glow-lunar: 0 0 80px hsl(320 76% 70% / 0.18);
     --shadow-orbit: 0 30px 80px -28px hsl(232 60% 2% / 0.85), 0 0 0 1px hsl(232 22% 18% / 0.6);
     --shadow-card: 0 24px 60px -28px hsl(232 60% 2% / 0.8);
 
@@ -106,9 +106,9 @@
     font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(ellipse 80% 60% at 12% -5%, hsl(258 90% 36% / 0.22), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 92% 0%, hsl(196 90% 36% / 0.18), transparent 60%),
-      radial-gradient(ellipse 90% 70% at 50% 110%, hsl(280 80% 26% / 0.28), transparent 65%);
+      radial-gradient(ellipse 80% 60% at 12% -5%, hsl(262 80% 30% / 0.18), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 92% 0%, hsl(232 70% 28% / 0.16), transparent 60%),
+      radial-gradient(ellipse 90% 70% at 50% 110%, hsl(320 60% 22% / 0.18), transparent 65%);
     background-attachment: fixed;
     overflow-x: hidden;
   }
