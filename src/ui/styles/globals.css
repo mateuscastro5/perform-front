@@ -27,11 +27,11 @@
 
     /* Aurora violet — primary brand */
     --primary: 262 88% 68%;
-    --primary-foreground: 232 38% 6%;
+    --primary-foreground: 0 0% 100%;
 
     /* Iris — secondary brand (deep blue-violet, not bright cyan) */
     --secondary: 232 78% 64%;
-    --secondary-foreground: 232 38% 6%;
+    --secondary-foreground: 0 0% 100%;
 
     /* Subtle neutral surface */
     --muted: 232 22% 14%;

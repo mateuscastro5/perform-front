@@ -56,18 +56,42 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, children, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
-    const showShine = variant === "default" || variant === "cosmic" || variant === "primary";
+    // ── asChild path ──
+    // Radix Slot requires a single React element child. The shine + inner
+    // wrapper trick used in the regular path produces *multiple* children,
+    // which throws `React.Children.only`. When asChild is requested we bypass
+    // those wrappers and pass the consumer's element straight through.
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...props}
+        >
+          {children}
+        </Slot>
+      );
+    }
+
+    const showShine =
+      variant === "default" || variant === "cosmic" || variant === "primary";
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
+      <button
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      >
         {showShine && (
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0 -translate-x-[120%] bg-[linear-gradient(120deg,transparent_30%,hsl(0_0%_100%/0.28)_50%,transparent_70%)] transition-transform duration-700 ease-out group-hover:translate-x-[120%]"
           />
         )}
-        <span className="relative inline-flex items-center justify-center gap-2">{children}</span>
-      </Comp>
+        <span className="relative inline-flex items-center justify-center gap-2">
+          {children}
+        </span>
+      </button>
     );
   },
 );

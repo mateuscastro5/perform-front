@@ -15,6 +15,7 @@ import {
   GitCommit,
   GitPullRequest,
   MessageSquare,
+  RefreshCcw,
   Search,
   Sparkles,
 } from "lucide-react";
@@ -47,7 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/ui/components/ui/select";
-import { Aurora, Comet, MoonOrb, StarField } from "@/ui/components/cosmic";
+import { Aurora, Comet, StarField } from "@/ui/components/cosmic";
 
 type InsightType = "prs" | "commits" | "review" | null;
 
@@ -231,6 +232,9 @@ export default function Dashboard() {
     githubWeeklyActivity,
     selectedRepository,
     isLoading,
+    lastSyncedAt,
+    isSyncing,
+    triggerDataCollection,
   } = useDashboard();
 
   const [detailedPrs, setDetailedPrs] = useState<DetailedPR[]>([]);
@@ -278,6 +282,100 @@ export default function Dashboard() {
 
   const prSeries = useMemo(() => groupByTimeWindow(prDates, 10), [prDates]);
   const reviewSeries = useMemo(() => groupByTimeWindow(reviewDates, 10), [reviewDates]);
+
+  /**
+   * Weekly velocity sparkline — driven by real GitHub weekly activity.
+   * Returns the SVG geometry (path strings, points, baseline) so the
+   * hero chart in the JSX is purely a binding consumer.
+   */
+  const velocitySparkline = useMemo(() => {
+    const data = githubWeeklyActivity?.data ?? [];
+    if (data.length < 2) return null;
+
+    const values = data.map((d) => d.commits);
+    const rawMax = Math.max(...values);
+    const rawMin = Math.min(...values);
+    // Guarantee a non-zero range so a flat series still renders.
+    const max = rawMax === rawMin ? rawMax + 1 : rawMax;
+    const min = rawMax === rawMin ? Math.max(rawMin - 1, 0) : rawMin;
+    const range = max - min;
+
+    // Viewbox geometry (matches <svg viewBox="0 0 340 110">)
+    const viewW = 340;
+    const padX = 6;
+    const padTop = 14;
+    const padBottom = 16;
+    const usableW = viewW - padX * 2;
+    const usableH = 110 - padTop - padBottom;
+
+    const points = values.map((v, i) => {
+      const x = padX + (i / (values.length - 1)) * usableW;
+      const y = padTop + usableH - ((v - min) / range) * usableH;
+      return { x, y, value: v };
+    });
+
+    // Smooth bezier curve through the points (mild horizontal control points)
+    const pathD = points.reduce((acc, pt, i) => {
+      if (i === 0) return `M ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`;
+      const prev = points[i - 1];
+      const dx = pt.x - prev.x;
+      const cp1x = prev.x + dx * 0.42;
+      const cp1y = prev.y;
+      const cp2x = pt.x - dx * 0.42;
+      const cp2y = pt.y;
+      return `${acc} C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`;
+    }, "");
+
+    const areaBottom = (110 - padBottom + 2).toFixed(1);
+    const areaD = `${pathD} L ${points[points.length - 1].x.toFixed(1)} ${areaBottom} L ${points[0].x.toFixed(1)} ${areaBottom} Z`;
+
+    // Average baseline (dotted line)
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const avgY = padTop + usableH - ((avg - min) / range) * usableH;
+
+    // Highest single day (for the secondary highlight dot)
+    const peakIdx = values.indexOf(rawMax);
+
+    return {
+      points,
+      pathD,
+      areaD,
+      avgY,
+      peakIdx,
+      latest: points[points.length - 1],
+      days: data.map((d) => d.day),
+    };
+  }, [githubWeeklyActivity]);
+
+  const velocityDelta = githubStats?.commits.percentageChange ?? 0;
+  const velocityDeltaLabel = `${velocityDelta > 0 ? "+" : ""}${velocityDelta.toFixed(0)}%`;
+  const velocityDeltaPositive = velocityDelta >= 0;
+
+  /**
+   * Re-render every 30 seconds so the "synced N min ago" label stays fresh
+   * without requiring user interaction.
+   */
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const lastSyncLabel = useMemo(() => {
+    if (isSyncing) return "syncing…";
+    if (!lastSyncedAt) return "never synced";
+    const diffMs = nowTick - new Date(lastSyncedAt).getTime();
+    if (diffMs < 0) return "just now";
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 30) return "just now";
+    if (sec < 60) return `${sec}s ago`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h ago`;
+    const day = Math.floor(hr / 24);
+    return `${day}d ago`;
+  }, [lastSyncedAt, nowTick, isSyncing]);
 
   const commitCardValue = useMemo(() => {
     const seriesTotal = commitSeries.reduce((acc, value) => acc + value, 0);
@@ -567,14 +665,6 @@ export default function Dashboard() {
           <div className="artemis-panel relative overflow-hidden rounded-[24px]">
             <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-border/30 px-6 py-3.5 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-                </span>
-                <span>Live</span>
-              </div>
-              <Separator orientation="vertical" className="h-3" />
-              <div className="flex items-center gap-2">
                 <span className="uppercase tracking-wide">Commits</span>
                 <span className="font-display text-sm text-foreground">{githubStats?.commits.thisWeek ?? 0}</span>
               </div>
@@ -590,9 +680,23 @@ export default function Dashboard() {
                 <span className="uppercase tracking-wide">Reviews</span>
                 <span className="font-display text-sm text-foreground">{githubStats?.reviews.total ?? 0}</span>
               </div>
-              <div className="ml-auto flex items-center gap-2">
-                <Clock className="h-3 w-3" />
-                <span>Last sync · {isLoading ? "syncing..." : "just now"}</span>
+              <div className="ml-auto flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-3 w-3" />
+                  <span>Synced {lastSyncLabel}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isSyncing) triggerDataCollection().catch(() => {});
+                  }}
+                  disabled={isSyncing}
+                  title={isSyncing ? "Sync in progress…" : "Sync now"}
+                  className="group inline-flex h-7 items-center gap-1.5 rounded-full border border-border/40 bg-card/40 px-3 text-[11px] font-medium text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCcw className={`h-3 w-3 transition-transform ${isSyncing ? "animate-spin" : "group-hover:rotate-90"}`} />
+                  <span>{isSyncing ? "Syncing" : "Sync now"}</span>
+                </button>
               </div>
             </div>
 
@@ -608,10 +712,113 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* Decorative moon — desktop only */}
-              <div className="hidden lg:block">
-                <MoonOrb size={180} variant="twilight" rings opacity={0.85} />
-              </div>
+              {/* ── Weekly velocity sparkline — driven by GitHub data ──
+                  Real UI element (Linear / Stripe / Vercel style).
+                  Sources: githubStats.commits.percentageChange + githubWeeklyActivity.data */}
+              {velocitySparkline && (
+                <div className="relative hidden h-[164px] w-[340px] lg:block">
+                  {/* Header: trend label */}
+                  <div className="absolute right-0 top-0 flex items-baseline gap-2">
+                    <span
+                      className={`font-display text-[32px] font-light leading-none tabular-nums ${
+                        velocityDeltaPositive ? "text-foreground" : "text-destructive"
+                      }`}
+                    >
+                      {velocityDeltaLabel}
+                    </span>
+                    <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                      velocity · 7d
+                    </span>
+                  </div>
+
+                  {/* Sparkline */}
+                  <svg
+                    viewBox="0 0 340 110"
+                    className="absolute bottom-6 left-0 h-[110px] w-full overflow-visible"
+                    aria-hidden
+                  >
+                    <defs>
+                      <linearGradient id="spark-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="hsl(262 95% 70%)" stopOpacity="0.32" />
+                        <stop offset="60%" stopColor="hsl(262 95% 70%)" stopOpacity="0.06" />
+                        <stop offset="100%" stopColor="hsl(262 95% 70%)" stopOpacity="0" />
+                      </linearGradient>
+                      <linearGradient id="spark-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="hsl(232 88% 72%)" />
+                        <stop offset="55%" stopColor="hsl(262 95% 72%)" />
+                        <stop offset="100%" stopColor="hsl(320 88% 74%)" />
+                      </linearGradient>
+                      <filter id="spark-glow" x="-30%" y="-30%" width="160%" height="160%">
+                        <feGaussianBlur stdDeviation="2.4" result="b" />
+                        <feMerge>
+                          <feMergeNode in="b" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+
+                    {/* Dotted average baseline */}
+                    <line
+                      x1="6"
+                      y1={velocitySparkline.avgY.toFixed(1)}
+                      x2="334"
+                      y2={velocitySparkline.avgY.toFixed(1)}
+                      stroke="hsl(220 14% 38%)"
+                      strokeWidth="1"
+                      strokeDasharray="2 4"
+                      opacity="0.35"
+                    />
+
+                    {/* Area fill under curve */}
+                    <path d={velocitySparkline.areaD} fill="url(#spark-fill)" />
+
+                    {/* Line stroke */}
+                    <path
+                      d={velocitySparkline.pathD}
+                      fill="none"
+                      stroke="url(#spark-stroke)"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      filter="url(#spark-glow)"
+                    />
+
+                    {/* Peak (highest day) — quiet pinpoint */}
+                    {velocitySparkline.peakIdx > 0 &&
+                      velocitySparkline.peakIdx < velocitySparkline.points.length - 1 && (
+                        <circle
+                          cx={velocitySparkline.points[velocitySparkline.peakIdx].x}
+                          cy={velocitySparkline.points[velocitySparkline.peakIdx].y}
+                          r="1.6"
+                          fill="hsl(220 30% 80%)"
+                          opacity="0.6"
+                        />
+                      )}
+
+                    {/* Latest point — bright highlight */}
+                    <circle
+                      cx={velocitySparkline.latest.x}
+                      cy={velocitySparkline.latest.y}
+                      r="4.5"
+                      fill="hsl(262 95% 75%)"
+                      opacity="0.25"
+                    />
+                    <circle
+                      cx={velocitySparkline.latest.x}
+                      cy={velocitySparkline.latest.y}
+                      r="2.4"
+                      fill="hsl(0 0% 100%)"
+                      style={{ filter: "drop-shadow(0 0 4px hsl(262 95% 75%))" }}
+                    />
+                  </svg>
+
+                  {/* Day axis — pulled from real weekly data */}
+                  <div className="absolute bottom-0 left-0 right-0 flex justify-between font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground/40">
+                    {velocitySparkline.days.map((d, i) => (
+                      <span key={`${d}-${i}`}>{d.slice(0, 3)}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

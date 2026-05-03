@@ -2,7 +2,6 @@ import { useEffect, useState, type CSSProperties, type ComponentType } from "rea
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bell,
   ChevronLeft,
   ChevronRight,
   GaugeCircle,
@@ -36,6 +35,7 @@ import {
   SIDEBAR_GAP,
 } from "@/ui/stores/uiStore";
 import { ArtemisLogo } from "@/ui/components/cosmic";
+import { NotificationCenter } from "@/ui/components/NotificationCenter";
 
 export interface BreadcrumbItem {
   label: string;
@@ -346,9 +346,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
               </kbd>
             </div>
 
-            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-muted/30">
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationCenter />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

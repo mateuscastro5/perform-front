@@ -1,14 +1,30 @@
-import { useState, useEffect, type MouseEvent, type ChangeEvent } from "react";
+import { useState, useEffect, type MouseEvent, type ChangeEvent, type KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardHeader } from "@/ui/components/DashboardHeader";
 import { useDashboard } from "@/ui/contexts/DashboardContext";
 import { useAuth } from "@/ui/contexts/AuthContext";
 import { apiService } from "@/ui/services/api.service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/components/ui/avatar";
-import { Plus, Trash2, Users, Check, X, UserPlus, Search, Shield, ChevronRight, GitCommit, GitPullRequest, GitMerge, Eye } from "lucide-react";
+import { Plus, Trash2, Users, Check, X, UserPlus, Search, Shield, ChevronRight, GitCommit, GitPullRequest, GitMerge, Eye, Pencil, MoreHorizontal } from "lucide-react";
 import { Input } from "@/ui/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/ui/components/ui/dialog";
+import { Button } from "@/ui/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/ui/components/ui/dropdown-menu";
 
 interface Squad {
   id: string;
@@ -100,6 +116,13 @@ const Squads = () => {
   const [isAssigning, setIsAssigning] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ── Edit / delete state ──────────────────────────────────────────
+  const [editingSquadId, setEditingSquadId] = useState<string | null>(null);
+  const [editedName, setEditedName] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [squadPendingDelete, setSquadPendingDelete] = useState<Squad | null>(null);
+  const [isDeletingSquad, setIsDeletingSquad] = useState(false);
+
   useEffect(() => {
     const fetchSquads = async () => {
       if (!token) return;
@@ -143,16 +166,63 @@ const Squads = () => {
     }
   };
 
-  const handleDeleteSquad = async (id: string) => {
-    if (!token) return;
+  const handleConfirmDeleteSquad = async () => {
+    if (!token || !squadPendingDelete) return;
+    setIsDeletingSquad(true);
     try {
-      await apiService.deleteSquad(token, id);
-      setSquads(squads.filter((squad) => squad.id !== id));
-      if (selectedSquadId === id) setSelectedSquadId(null);
+      await apiService.deleteSquad(token, squadPendingDelete.id);
+      const remaining = squads.filter((s) => s.id !== squadPendingDelete.id);
+      setSquads(remaining);
+      if (selectedSquadId === squadPendingDelete.id) {
+        setSelectedSquadId(remaining.length > 0 ? remaining[0].id : null);
+      }
       setIsAssigning(false);
+      setSquadPendingDelete(null);
     } catch (error) {
       console.error("Failed to delete squad:", error);
+    } finally {
+      setIsDeletingSquad(false);
     }
+  };
+
+  const startEditSquad = (squad: Squad) => {
+    setEditingSquadId(squad.id);
+    setEditedName(squad.name);
+  };
+
+  const cancelEditSquad = () => {
+    setEditingSquadId(null);
+    setEditedName("");
+  };
+
+  const handleSaveEditSquad = async () => {
+    if (!token || !editingSquadId) return;
+    const trimmed = editedName.trim();
+    if (!trimmed) return;
+    const target = squads.find((s) => s.id === editingSquadId);
+    if (target && trimmed === target.name) {
+      cancelEditSquad();
+      return;
+    }
+    setIsSavingEdit(true);
+    try {
+      const updated = await apiService.updateSquad(token, editingSquadId, { name: trimmed });
+      setSquads((prev) =>
+        prev.map((s) =>
+          s.id === editingSquadId ? { ...s, name: updated?.name ?? trimmed } : s
+        )
+      );
+      cancelEditSquad();
+    } catch (error) {
+      console.error("Failed to update squad:", error);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSaveEditSquad();
+    if (e.key === "Escape") cancelEditSquad();
   };
 
   const handleToggleMember = async (devId: string) => {
@@ -214,7 +284,7 @@ const Squads = () => {
       <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
       <main
-        className="flex-1 flex overflow-hidden pr-6 md:pr-10 pt-[122px] pb-8 relative z-10 gap-4 transition-[padding-left] duration-300"
+        className="flex-1 flex overflow-hidden pr-6 md:pr-10 pt-[148px] pb-8 relative z-10 gap-4 transition-[padding-left] duration-300"
         style={{ paddingLeft: contentLeft + 16 }}
       >
         {/* ─── Sidebar ─── */}
@@ -284,13 +354,9 @@ const Squads = () => {
                 .filter(Boolean) as DevPreview[];
 
               return (
-                <button
+                <div
                   key={squad.id}
-                  onClick={() => {
-                    setSelectedSquadId(squad.id);
-                    setIsAssigning(false);
-                  }}
-                  className={`relative w-full text-left px-3 py-2.5 rounded-xl transition-all group ${
+                  className={`relative group rounded-xl transition-all ${
                     isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -302,7 +368,13 @@ const Squads = () => {
                     />
                   )}
 
-                  <div className="relative z-10 flex items-center gap-2.5">
+                  <button
+                    onClick={() => {
+                      setSelectedSquadId(squad.id);
+                      setIsAssigning(false);
+                    }}
+                    className="relative z-10 w-full text-left px-3 py-2.5 flex items-center gap-2.5"
+                  >
                     {/* Icon */}
                     <div
                       className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
@@ -324,9 +396,9 @@ const Squads = () => {
                       </p>
                     </div>
 
-                    {/* Stacked avatar preview */}
+                    {/* Stacked avatar preview — hidden when row is hovered to avoid overlap with the … menu */}
                     {previewDevs.length > 0 && (
-                      <div className="flex items-center -space-x-1.5 shrink-0">
+                      <div className="flex items-center -space-x-1.5 shrink-0 group-hover:opacity-0 transition-opacity">
                         {previewDevs.slice(0, 3).map((dev) => (
                           <Avatar key={dev.id} className="h-4.5 w-4.5 ring-1 ring-background" style={{ height: 18, width: 18 }}>
                             <AvatarImage
@@ -350,8 +422,40 @@ const Squads = () => {
                         )}
                       </div>
                     )}
+                  </button>
+
+                  {/* Hover actions — edit/delete */}
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={(e: MouseEvent<HTMLButtonElement>) => e.stopPropagation()}
+                          className="h-7 w-7 rounded-lg bg-card/80 border border-border/40 text-muted-foreground hover:text-foreground hover:bg-card flex items-center justify-center backdrop-blur-md transition-colors"
+                          aria-label="Squad actions"
+                        >
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => startEditSquad(squad)}
+                        >
+                          <Pencil className="mr-2 h-3.5 w-3.5" />
+                          <span>Rename</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer text-destructive focus:text-destructive"
+                          onClick={() => setSquadPendingDelete(squad)}
+                        >
+                          <Trash2 className="mr-2 h-3.5 w-3.5" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </button>
+                </div>
               );
             })}
 
@@ -428,10 +532,38 @@ const Squads = () => {
                         </span>
                       </div>
 
-                      {/* Name */}
-                      <h1 className="text-[28px] font-semibold tracking-tight text-foreground leading-none">
-                        {selectedSquad.name}
-                      </h1>
+                      {/* Name (inline editable) */}
+                      {editingSquadId === selectedSquad.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            autoFocus
+                            value={editedName}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setEditedName(e.target.value)}
+                            onKeyDown={handleEditKeyDown}
+                            onBlur={handleSaveEditSquad}
+                            disabled={isSavingEdit}
+                            className="text-[28px] font-semibold tracking-tight text-foreground leading-none bg-transparent border-b border-primary/40 focus:border-primary outline-none px-1 -ml-1 max-w-[420px] disabled:opacity-60"
+                          />
+                          <button
+                            onClick={cancelEditSquad}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startEditSquad(selectedSquad)}
+                          className="group/title flex items-center gap-2 text-left"
+                          title="Click to rename"
+                        >
+                          <h1 className="text-[28px] font-semibold tracking-tight text-foreground leading-none">
+                            {selectedSquad.name}
+                          </h1>
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground/40 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                        </button>
+                      )}
 
                       {/* Member stack + count */}
                       <div className="flex items-center gap-3 mt-3.5">
@@ -518,7 +650,16 @@ const Squads = () => {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDeleteSquad(selectedSquad.id)}
+                        onClick={() => startEditSquad(selectedSquad)}
+                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-lg transition-colors border border-transparent hover:border-border/60"
+                        title="Rename Squad"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setSquadPendingDelete(selectedSquad)}
                         className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors border border-transparent hover:border-destructive/20"
                         title="Delete Squad"
                       >
@@ -745,6 +886,49 @@ const Squads = () => {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* ── Delete confirmation dialog ─────────────────────────────── */}
+      <Dialog
+        open={!!squadPendingDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingSquad) setSquadPendingDelete(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Delete squad?</DialogTitle>
+            <DialogDescription>
+              {squadPendingDelete && (
+                <>
+                  This will permanently delete{" "}
+                  <span className="font-semibold text-foreground">{squadPendingDelete.name}</span>.{" "}
+                  {squadPendingDelete.members.length > 0
+                    ? `Its ${squadPendingDelete.members.length} ${
+                        squadPendingDelete.members.length === 1 ? "member" : "members"
+                      } will be unassigned, but no developer profiles are deleted.`
+                    : "This action cannot be undone."}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setSquadPendingDelete(null)}
+              disabled={isDeletingSquad}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteSquad}
+              disabled={isDeletingSquad}
+            >
+              {isDeletingSquad ? "Deleting…" : "Delete squad"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

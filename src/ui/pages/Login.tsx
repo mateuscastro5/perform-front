@@ -1,5 +1,4 @@
-import { useState, FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useState, FormEvent, type CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Github, Lock, Mail, Loader2 } from "lucide-react";
 
@@ -10,9 +9,6 @@ import { Button } from "@/ui/components/ui/button";
 import { Alert, AlertDescription } from "@/ui/components/ui/alert";
 import {
   ArtemisLogo,
-  Aurora,
-  Comet,
-  MoonOrb,
   StarField,
 } from "@/ui/components/cosmic";
 
@@ -37,54 +33,138 @@ const Login = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      {/* Cosmic backdrop — purely decorative, low contrast against content */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <StarField className="absolute inset-0 opacity-60" density={0.7} />
-        <Aurora intensity="soft" />
+    <div className="relative isolate h-screen overflow-hidden bg-background text-foreground">
 
-        {/* Hero planet — sits far to the right, mostly off-screen, behind everything.
-            This is the "grand" centerpiece à la Comet / Perplexity. */}
-        <div className="absolute -right-[32vw] top-1/2 hidden -translate-y-1/2 lg:block">
-          <MoonOrb size={920} variant="twilight" rings opacity={0.55} />
-        </div>
+      {/* ── Decorative backdrop — minimal, neon, premium ────────────── */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
 
-        {/* Smaller violet companion behind the form — adds depth */}
-        <div className="absolute right-[18vw] top-[18%] hidden -translate-y-1/2 xl:block">
-          <MoonOrb size={220} variant="rose" rings={false} opacity={0.45} float />
-        </div>
+        {/* Whisper-faint stars */}
+        <StarField className="absolute inset-0 opacity-25" density={0.4} />
 
-        <Comet top="22%" duration={14} delay="-3s" size="lg" />
-        <Comet top="68%" duration={18} delay="-9s" size="md" angle={-10} />
+        {/* ─── BLOOM 1 — distant violet nebula, bottom-left ──
+            Pure luminous color, no edge. Lower opacity, deeper glow. */}
+        <div
+          aria-hidden
+          className="absolute"
+          style={{
+            width: "820px",
+            height: "820px",
+            bottom: "-360px",
+            left: "-280px",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle at 50% 50%, hsl(262 95% 70% / 0.07) 0%, hsl(232 85% 60% / 0.04) 38%, transparent 68%)",
+            filter: "blur(40px)",
+          }}
+        />
 
-        {/* Soft vignette so content stays legible */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,hsl(var(--background)/0.85)_100%)]" />
+        {/* ─── NEON RING 1 — thin ring with strong glow halo ── */}
+        <div
+          aria-hidden
+          className="absolute animate-[artemis-float_18s_ease-in-out_infinite]"
+          style={{
+            width: "440px",
+            height: "440px",
+            bottom: "-120px",
+            left: "-100px",
+            borderRadius: "50%",
+            border: "1px solid hsl(262 100% 82% / 0.18)",
+            boxShadow:
+              "0 0 80px hsl(262 100% 70% / 0.22), 0 0 140px hsl(262 95% 65% / 0.12), inset 0 0 60px hsl(232 90% 60% / 0.06)",
+          }}
+        />
+
+        {/* ─── NEON RING 2 — smaller sibling, bright neon outline ── */}
+        <div
+          aria-hidden
+          className="absolute"
+          style={{
+            width: "280px",
+            height: "280px",
+            bottom: "60px",
+            left: "60px",
+            borderRadius: "50%",
+            border: "1px solid hsl(232 95% 78% / 0.14)",
+            boxShadow:
+              "0 0 60px hsl(262 95% 70% / 0.16), 0 0 120px hsl(262 90% 65% / 0.08)",
+          }}
+        />
+
+        {/* ─── BLOOM 2 — rose nebula, top-right ── */}
+        <div
+          aria-hidden
+          className="absolute"
+          style={{
+            width: "560px",
+            height: "560px",
+            top: "-220px",
+            right: "-180px",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle at 50% 50%, hsl(320 90% 70% / 0.06) 0%, hsl(262 85% 65% / 0.03) 40%, transparent 70%)",
+            filter: "blur(48px)",
+          }}
+        />
+
+        {/* ─── NEON RING 3 — top-right accent with bright glow ── */}
+        <div
+          aria-hidden
+          className="absolute animate-[artemis-float_22s_ease-in-out_infinite]"
+          style={{
+            width: "340px",
+            height: "340px",
+            top: "-90px",
+            right: "-90px",
+            borderRadius: "50%",
+            border: "1px solid hsl(320 95% 80% / 0.14)",
+            boxShadow:
+              "0 0 70px hsl(320 95% 70% / 0.18), 0 0 140px hsl(320 90% 65% / 0.08)",
+            animationDelay: "-7s",
+          }}
+        />
+
+        {/* ─── Whisper diagonal color wash ── */}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(262 88% 68% / 0.02) 0%, transparent 30%, transparent 70%, hsl(320 76% 70% / 0.02) 100%)",
+          }}
+        />
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-8 py-6 lg:px-12">
-        <ArtemisLogo />
-        <span className="hidden text-sm text-muted-foreground sm:inline">
-          New here?{" "}
-          <Link to="/register" className="font-medium text-foreground transition-colors hover:text-primary">
-            Create an account →
-          </Link>
-        </span>
+      {/* ── Drag strip — invisible, full-width region at very top ─── */}
+      <div
+        className="absolute inset-x-0 top-0 z-20 h-8"
+        style={{ WebkitAppRegion: "drag" } as CSSProperties}
+      />
+
+      {/* ── Header ──────────────────────────────────────────────────── */}
+      <header
+        className="relative z-10 flex items-center justify-between px-8 py-6 lg:px-12"
+        style={{ WebkitAppRegion: "drag" } as CSSProperties}
+      >
+        <div style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
+          <ArtemisLogo />
+        </div>
       </header>
 
-      <main className="relative z-10 mx-auto grid min-h-[calc(100vh-7rem)] w-full max-w-7xl grid-cols-1 items-center gap-10 px-6 pb-12 pt-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-12">
-        {/* Left — hero copy */}
-        <section className="relative flex flex-col justify-center">
+      {/* ── Main — 2-column at lg, single-column below ──────────────── */}
+      <main
+        className="relative z-10 mx-auto grid h-[calc(100vh-7rem)] w-full max-w-7xl grid-cols-1 items-center gap-6 overflow-hidden px-6 pb-6 pt-2 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-12"
+        style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+      >
+
+        {/* ── Left: hero copy ── */}
+        <section className="relative hidden flex-col justify-center lg:flex">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="max-w-xl"
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/30 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" />
-              Engineering intelligence
-            </span>
-            <h1 className="mt-6 font-display text-[clamp(2.4rem,5.4vw,4.4rem)] font-light leading-[0.98] tracking-[-0.035em] text-balance">
+            <h1 className="font-display text-[clamp(2.4rem,5.4vw,4.4rem)] font-light leading-[0.98] tracking-[-0.035em] text-balance">
               <span className="artemis-text-lunar">A calmer way to see</span>
               <br />
               <span className="artemis-text-aurora">how your team ships.</span>
@@ -114,25 +194,29 @@ const Login = () => {
           </motion.div>
         </section>
 
-        {/* Right — sign-in card (floats over the planet) */}
+        {/* ── Right: sign-in card ── */}
         <section className="relative flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             className="relative w-full max-w-[420px]"
           >
-            {/* Soft aurora wash directly behind the card */}
+            {/* Aurora wash behind the card */}
             <div
               aria-hidden
-              className="absolute -inset-2 rounded-[32px] bg-aurora-gradient opacity-30 blur-3xl"
+              className="absolute -inset-3 rounded-[36px] opacity-25 blur-3xl"
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(262 88% 68% / 0.45), hsl(232 78% 64% / 0.35) 50%, hsl(320 76% 70% / 0.25))",
+              }}
             />
 
             <div className="artemis-panel relative overflow-hidden rounded-[28px] p-8 sm:p-10">
               {/* Top inner highlight */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
               />
 
               <div className="relative">
@@ -151,7 +235,7 @@ const Login = () => {
                       Email
                     </Label>
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                       <Input
                         id="email"
                         type="email"
@@ -179,7 +263,7 @@ const Login = () => {
                       </a>
                     </div>
                     <div className="relative">
-                      <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+                      <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                       <Input
                         id="password"
                         type="password"
@@ -209,7 +293,7 @@ const Login = () => {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        Signing in...
+                        Signing in…
                       </>
                     ) : (
                       <>
@@ -229,21 +313,14 @@ const Login = () => {
                 <Button variant="secondary" size="lg" className="w-full" disabled>
                   <Github className="h-4 w-4" />
                   <span>Continue with GitHub</span>
-                  <span className="ml-1 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
+                  <span className="ml-1 rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
                     soon
                   </span>
                 </Button>
-
-                <p className="mt-7 text-center text-xs text-muted-foreground sm:hidden">
-                  New here?{" "}
-                  <Link to="/register" className="font-medium text-foreground hover:text-primary">
-                    Create an account
-                  </Link>
-                </p>
               </div>
             </div>
 
-            <p className="mt-6 text-center text-[11px] text-muted-foreground/70">
+            <p className="mt-6 text-center text-[11px] text-muted-foreground/50">
               © {new Date().getFullYear()} Artemis · Built for engineering teams
             </p>
           </motion.div>
