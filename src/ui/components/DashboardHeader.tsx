@@ -7,6 +7,7 @@ import {
   GaugeCircle,
   Home,
   LayoutDashboard,
+  Lightbulb,
   LogOut,
   Minus,
   Settings,
@@ -57,17 +58,19 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "home",       label: "Home",       icon: LayoutDashboard, path: "/" },
-  { id: "squads",     label: "Squads",     icon: Users,           path: "/squads" },
-  { id: "complexity", label: "Complexity", icon: GaugeCircle,     path: "/complexity" },
-  { id: "profile",    label: "Profile",    icon: User,            path: "/profile" },
-  { id: "settings",   label: "Settings",   icon: Settings,        path: "/settings" },
+  { id: "home",       label: "Home",         icon: LayoutDashboard, path: "/" },
+  { id: "squads",     label: "Squads",       icon: Users,           path: "/squads" },
+  { id: "complexity", label: "Complexity",   icon: GaugeCircle,     path: "/complexity" },
+  { id: "how",        label: "How we do it", icon: Lightbulb,       path: "/how-we-do-it" },
+  { id: "profile",    label: "Profile",      icon: User,            path: "/profile" },
+  { id: "settings",   label: "Settings",     icon: Settings,        path: "/settings" },
 ];
 
 const ACTIVE_LABEL: Record<string, string> = {
   home: "Home",
   squads: "Squads",
   complexity: "Complexity",
+  how: "How we do it",
   profile: "Profile",
   settings: "Settings",
 };
@@ -76,6 +79,7 @@ const ACTIVE_PATH: Record<string, string> = {
   home: "/",
   squads: "/squads",
   complexity: "/complexity",
+  how: "/how-we-do-it",
   profile: "/profile",
   settings: "/settings",
 };

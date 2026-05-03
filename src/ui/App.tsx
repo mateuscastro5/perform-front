@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ComplexityDashboard from './pages/ComplexityDashboard';
 import SquadXRayView from './pages/SquadXRayView';
+import HowWeDoIt from './pages/HowWeDoIt';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function AppRoutes() {
@@ -74,6 +75,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ComplexityDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/how-we-do-it"
+        element={
+          <ProtectedRoute>
+            <HowWeDoIt />
           </ProtectedRoute>
         }
       />
