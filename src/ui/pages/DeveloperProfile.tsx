@@ -105,9 +105,6 @@ function deriveInsights(
     + `${techList ? `Main technologies: ${techList}. ` : ''}`
     + `AI scoring shows ${trendLabel} over the tracked period, with ${avgConfidence}% average confidence in assessments.`;
 
-  const strengths: string[] = [];
-  const areasForImprovement: string[] = [];
-
   // ── Distribution math used by several signals ──
   const total = analyses.length;
   const featureRatio = (typeCounts['feature'] ?? 0) / total;
@@ -131,57 +128,164 @@ function deriveInsights(
   // Tech variety
   const techCount = techSet.size;
 
-  // ── Strengths ──
-  if (avgConfidence >= 75)
-    strengths.push('Consistent, predictable code changes — the AI has high confidence in its assessments');
-  if (topType === 'feature' && featureRatio >= 0.5)
-    strengths.push('Strong feature delivery cadence — bulk of work moves the product forward');
-  if (refactorRatio >= 0.15)
-    strengths.push('Actively pays down technical debt through refactoring');
-  if (testRatio >= 0.1)
-    strengths.push('Invests in test coverage alongside shipped features');
-  if (trend === 'improving')
-    strengths.push('Taking on progressively heavier work — clear sign of growth');
-  if (avgComplexity <= 50 && total >= 5)
-    strengths.push('Ships manageable, reviewable PRs — easy on the review queue');
-  if (stdDev < 12 && total >= 5)
-    strengths.push('Predictable PR sizing — low variance in complexity makes planning easier');
-  if (techCount >= 3)
-    strengths.push(`Versatile across the stack — touches ${techCount}+ distinct technologies`);
-  if (recentCount >= 3)
-    strengths.push(`Recent momentum — ${recentCount} PRs analyzed in the last 14 days`);
-  if (bugfixRatio >= 0.15 && bugfixRatio <= 0.4)
-    strengths.push('Healthy mix of fixes and features — keeps the codebase honest');
-  if (avgComplexity > 60 && avgConfidence >= 70)
-    strengths.push('Owns substantial chunks of work the AI can read clearly — high-impact contributor');
-  if (total >= 15)
-    strengths.push('Sustained contributor — large enough sample to trust the signals');
+  /**
+   * Tier-aware insight signals.
+   *
+   * Each signal is a `[priority, message]` tuple. The priority lets us
+   * sort so the strongest, most differentiating observations land at the
+   * top of the list. Most signals also pick *different copy* depending
+   * on a tier (e.g. someone with 42 technologies reads a different
+   * sentence than someone with 8 — we explicitly call out the difference
+   * instead of using the same generic 'versatile' label for both).
+   */
+  type Signal = [priority: number, msg: string];
+  const strengthSignals: Signal[] = [];
+  const growthSignals: Signal[] = [];
 
-  // ── Growth areas ──
-  if (avgConfidence < 60)
-    areasForImprovement.push('PR titles and descriptions could be more descriptive — would lift AI confidence');
-  if (avgComplexity > 75)
-    areasForImprovement.push('Several heavy PRs — consider breaking into smaller reviewable chunks');
-  if (testRatio < 0.05 && total >= 5)
-    areasForImprovement.push('Almost no test-only PRs — dedicated coverage work could harden the codebase');
-  if (docsRatio < 0.03 && refactorRatio < 0.1 && total >= 5)
-    areasForImprovement.push('Documentation and refactor PRs are rare — schedule explicit time for them');
-  if (stdDev > 25)
-    areasForImprovement.push('PR size varies widely — narrower scope per PR would speed up reviews');
-  if (featureRatio > 0.85)
-    areasForImprovement.push('Almost everything is a feature — the codebase will accumulate debt without explicit refactor work');
-  if (bugfixRatio > 0.5)
-    areasForImprovement.push('More than half the work is bugfixes — investigate upstream root causes');
-  if (recentCount === 0 && total > 0)
-    areasForImprovement.push('No PRs analyzed in the last 14 days — fresh data would sharpen the assessment');
-  if (trend === 'declining')
-    areasForImprovement.push('Complexity trending down — confirm this matches the planned trajectory');
-  if (techCount === 1 && total >= 5)
-    areasForImprovement.push('Work concentrated on a single tech — cross-stack exposure could broaden impact');
-  if (total < 5)
-    areasForImprovement.push('Small sample so far — analyze more PRs for sturdier insights');
+  // ─── Tech variety — graded by breadth ───
+  if (techCount >= 25) {
+    strengthSignals.push([95, `Stack omnivore — fluent across ${techCount} distinct technologies, exceptionally rare breadth`]);
+  } else if (techCount >= 15) {
+    strengthSignals.push([88, `Polyglot contributor — ${techCount} technologies with confident handling across the codebase`]);
+  } else if (techCount >= 8) {
+    strengthSignals.push([78, `Strong cross-stack presence — works across ${techCount} technologies`]);
+  } else if (techCount >= 4) {
+    strengthSignals.push([60, `Comfortable across ${techCount} technologies — covers the core stack`]);
+  } else if (techCount >= 2) {
+    strengthSignals.push([45, `Focused on ${techCount} primary technologies — deep over wide`]);
+  }
+  if (techCount === 1 && total >= 5) {
+    growthSignals.push([72, 'Work concentrated on a single technology — cross-stack exposure could broaden impact']);
+  }
 
-  // Always guarantee at least 3 strengths and 3 growth areas. We pad with
+  // ─── AI confidence — graded ───
+  if (avgConfidence >= 90) {
+    strengthSignals.push([92, `Crystal-clear changes — AI nails ${avgConfidence}% of assessments, top-tier code legibility`]);
+  } else if (avgConfidence >= 80) {
+    strengthSignals.push([82, `Highly legible code — ${avgConfidence}% AI confidence means PRs are easy to review`]);
+  } else if (avgConfidence >= 70) {
+    strengthSignals.push([68, `Consistent, predictable code changes — ${avgConfidence}% AI confidence sits comfortably`]);
+  }
+  if (avgConfidence < 50) {
+    growthSignals.push([90, `Low ${avgConfidence}% AI confidence — PRs land without enough context to read confidently`]);
+  } else if (avgConfidence < 65) {
+    growthSignals.push([70, `${avgConfidence}% AI confidence — descriptive titles and bodies would lift signal quality`]);
+  }
+
+  // ─── Complexity range / impact ───
+  if (avgComplexity > 75 && avgConfidence >= 70) {
+    strengthSignals.push([90, `High-impact contributor — avg complexity ${avgComplexity}/100 owned with clear AI signal`]);
+  } else if (avgComplexity >= 55 && avgComplexity <= 75 && avgConfidence >= 65) {
+    strengthSignals.push([70, `Owns moderate-weight work — ${avgComplexity}/100 average sits in productive territory`]);
+  } else if (avgComplexity <= 35 && total >= 5) {
+    strengthSignals.push([55, `Ships small, fast-merge PRs (avg ${avgComplexity}/100) — keeps the queue moving`]);
+  } else if (avgComplexity <= 50 && total >= 5) {
+    strengthSignals.push([50, `Manageable, reviewable PRs (avg ${avgComplexity}/100) — friendly to the review queue`]);
+  }
+  if (avgComplexity > 80) {
+    growthSignals.push([85, `Heavy PR scope (avg ${avgComplexity}/100) — splitting large changes would speed reviews`]);
+  } else if (avgComplexity > 70) {
+    growthSignals.push([60, `Borderline-heavy PRs (avg ${avgComplexity}/100) — a couple of splits could ease the load`]);
+  }
+
+  // ─── Variance / consistency ───
+  if (stdDev < 8 && total >= 5) {
+    strengthSignals.push([72, `Highly predictable PR sizing — almost no variance, planning is easy`]);
+  } else if (stdDev < 14 && total >= 5) {
+    strengthSignals.push([55, `Predictable PR sizing — low complexity variance makes review estimates accurate`]);
+  }
+  if (stdDev > 28 && total >= 5) {
+    growthSignals.push([62, `PR size swings widely (σ=${Math.round(stdDev)}) — narrower scope per PR would speed reviews`]);
+  } else if (stdDev > 22 && total >= 5) {
+    growthSignals.push([45, `Moderate variance in PR size — try to keep changes within a tighter scope`]);
+  }
+
+  // ─── Recent momentum ───
+  if (recentCount >= 10) {
+    strengthSignals.push([85, `High recent throughput — ${recentCount} PRs analyzed in the last 14 days`]);
+  } else if (recentCount >= 5) {
+    strengthSignals.push([62, `Steady recent momentum — ${recentCount} PRs analyzed in the last 14 days`]);
+  } else if (recentCount >= 2) {
+    strengthSignals.push([40, `Active in the last 14 days — ${recentCount} fresh PRs analyzed`]);
+  }
+  if (recentCount === 0 && total > 0) {
+    growthSignals.push([55, 'No PRs analyzed in the last 14 days — fresh data would sharpen the assessment']);
+  }
+
+  // ─── Sustained contribution ───
+  if (total >= 60) {
+    strengthSignals.push([75, `Power user — ${total} analyzed PRs give exceptionally rich signal`]);
+  } else if (total >= 25) {
+    strengthSignals.push([55, `High-throughput contributor — ${total} PRs in the dataset deliver high signal quality`]);
+  } else if (total >= 12) {
+    strengthSignals.push([42, `Sustained contributor — ${total} PRs is enough to trust the signals`]);
+  }
+  if (total < 5) {
+    growthSignals.push([35, `Only ${total} PR${total === 1 ? '' : 's'} analyzed — analyze more for sturdier insights`]);
+  }
+
+  // ─── Feature delivery ratio ───
+  if (featureRatio >= 0.7 && featureRatio <= 0.85) {
+    strengthSignals.push([58, `Heavy feature focus (${Math.round(featureRatio * 100)}%) — most work moves the product forward`]);
+  } else if (featureRatio >= 0.5 && featureRatio < 0.7) {
+    strengthSignals.push([48, `Solid feature cadence (${Math.round(featureRatio * 100)}%) — balanced output`]);
+  }
+  if (featureRatio > 0.9) {
+    growthSignals.push([70, `${Math.round(featureRatio * 100)}% of work is features — debt and refactor will accumulate without explicit time for them`]);
+  } else if (featureRatio > 0.85) {
+    growthSignals.push([50, `Feature-dominant (${Math.round(featureRatio * 100)}%) — schedule occasional refactor blocks to balance`]);
+  }
+
+  // ─── Refactor discipline ───
+  if (refactorRatio >= 0.3) {
+    strengthSignals.push([65, `Strong refactoring discipline — ${Math.round(refactorRatio * 100)}% of work targets technical debt`]);
+  } else if (refactorRatio >= 0.15) {
+    strengthSignals.push([50, `Actively pays down technical debt — ${Math.round(refactorRatio * 100)}% refactor PRs`]);
+  } else if (refactorRatio >= 0.07) {
+    strengthSignals.push([35, `Touches refactor work occasionally (${Math.round(refactorRatio * 100)}%)`]);
+  }
+
+  // ─── Test discipline ───
+  if (testRatio >= 0.3) {
+    strengthSignals.push([65, `Test-first leader — ${Math.round(testRatio * 100)}% dedicated test PRs, exceptional discipline`]);
+  } else if (testRatio >= 0.15) {
+    strengthSignals.push([52, `Strong test investment — ${Math.round(testRatio * 100)}% of work is dedicated coverage`]);
+  } else if (testRatio >= 0.07) {
+    strengthSignals.push([38, `Mixes in test PRs (${Math.round(testRatio * 100)}%) alongside features`]);
+  }
+  if (testRatio < 0.05 && total >= 8) {
+    growthSignals.push([60, 'Almost no test-only PRs — dedicated coverage work could harden the codebase']);
+  }
+
+  // ─── Bugfix balance ───
+  if (bugfixRatio >= 0.18 && bugfixRatio <= 0.32) {
+    strengthSignals.push([42, `Healthy mix of fixes and features (${Math.round(bugfixRatio * 100)}% bugfix) — keeps the codebase honest`]);
+  }
+  if (bugfixRatio > 0.55) {
+    growthSignals.push([78, `${Math.round(bugfixRatio * 100)}% of work is bugfixes — investigate upstream root causes`]);
+  } else if (bugfixRatio > 0.4) {
+    growthSignals.push([45, `${Math.round(bugfixRatio * 100)}% bugfix ratio is on the high side — root-cause work could reduce it`]);
+  }
+
+  // ─── Trend ───
+  if (trend === 'improving') {
+    strengthSignals.push([72, 'Taking on progressively heavier work — clear sign of growth']);
+  } else if (trend === 'declining') {
+    growthSignals.push([35, 'Complexity trending down — confirm this matches the planned trajectory']);
+  }
+
+  // ─── Documentation gap ───
+  if (docsRatio < 0.03 && refactorRatio < 0.1 && total >= 8) {
+    growthSignals.push([40, 'Documentation and refactor PRs are rare — schedule explicit time for them']);
+  }
+
+  // Sort by priority (highest first), then drop priority and use the message
+  strengthSignals.sort((a, b) => b[0] - a[0]);
+  growthSignals.sort((a, b) => b[0] - a[0]);
+  const strengths = strengthSignals.map(([, m]) => m);
+  const areasForImprovement = growthSignals.map(([, m]) => m);
+
+  // Always guarantee at least 3 strengths and 3 growth areas. Pad with
   // baseline observations rather than leaving the lists thin.
   while (strengths.length < 3) {
     if (total >= 5 && !strengths.some((s) => s.startsWith('Active'))) {
