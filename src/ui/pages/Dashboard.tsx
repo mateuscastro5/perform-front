@@ -18,9 +18,21 @@ import {
   RefreshCcw,
   Search,
   Sparkles,
+  X,
 } from "lucide-react";
 import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -1002,38 +1014,78 @@ export default function Dashboard() {
 
       {/* — Insight Drilldown Dialog ——————————————— */}
       <Dialog open={selectedInsight !== null} onOpenChange={(open) => !open && setSelectedInsight(null)}>
-        <DialogContent className="flex h-[calc(100vh-2rem)] max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0">
-          <div className="bg-gradient-to-r from-primary/15 via-card/60 to-secondary/10 p-6 pb-4">
+        <DialogContent className="flex h-[calc(100vh-2rem)] max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 border-border/55 bg-card/85 backdrop-blur-2xl">
+          {/* Aurora wash behind */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-1 rounded-[36px] opacity-25 blur-3xl"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(262 88% 68% / 0.4), hsl(232 78% 64% / 0.3) 50%, hsl(320 76% 70% / 0.25))",
+            }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+          />
+
+          {/* ── Header ── */}
+          <div className="relative px-7 pt-6 pb-5 border-b border-border/40">
             <DialogHeader className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <DialogTitle className="font-display text-2xl font-medium tracking-[-0.01em]">
-                    {insightTitle}
+                  <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-primary/85 mb-1.5">
+                    {selectedInsight === "prs"
+                      ? "Pull Requests"
+                      : selectedInsight === "commits"
+                        ? "Commits · Weekly"
+                        : "Review Queue"}
+                  </p>
+                  <DialogTitle className="font-display text-[28px] font-light leading-none tracking-[-0.025em]">
+                    <span className="artemis-text-lunar">{insightTitle}</span>
                   </DialogTitle>
-                  <DialogDescription className="mt-1">
-                    Data from GitHub analytics and stored records.
+                  <DialogDescription className="mt-2 text-[13px] text-muted-foreground/85 max-w-md">
+                    {selectedInsight === "prs"
+                      ? "Every pull request opened, closed and merged. Filter by author, time window or status."
+                      : selectedInsight === "commits"
+                        ? "Daily commit volume across the week, with a list of the latest events."
+                        : "Open PRs that don't have an APPROVED review yet — sorted by oldest first."}
                   </DialogDescription>
                 </div>
-                <Badge variant="aurora" className="gap-1">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {filteredInsightTotal} of {insightTotal}
-                </Badge>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1 text-[11px] font-medium text-secondary tabular-nums">
+                    <Sparkles className="h-3 w-3" />
+                    {filteredInsightTotal}
+                    <span className="text-secondary/55">/</span>
+                    {insightTotal}
+                  </span>
+                  <DialogClose asChild>
+                    <button
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border/70 transition-colors"
+                      aria-label="Close"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </DialogClose>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              {/* Filter bar — flat, inline */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[220px] max-w-[360px]">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/55" />
                   <Input
                     value={insightSearch}
                     onChange={(event) => setInsightSearch(event.target.value)}
-                    placeholder="Search by title, author or ID..."
-                    className="pl-9"
+                    placeholder="Search title, author or #id…"
+                    className="h-9 pl-9 text-[13px] bg-card/40 border-border/40"
                   />
                 </div>
 
                 <Select value={insightAuthorFilter} onValueChange={setInsightAuthorFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by author" />
+                  <SelectTrigger className="h-9 w-[180px] text-[13px] bg-card/40 border-border/40">
+                    <SelectValue placeholder="Author" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All authors</SelectItem>
@@ -1044,11 +1096,9 @@ export default function Dashboard() {
                 </Select>
 
                 <Select value={insightPeriodFilter} onValueChange={setInsightPeriodFilter}>
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <CalendarRange className="h-4 w-4 text-muted-foreground" />
-                      <SelectValue placeholder="Time window" />
-                    </div>
+                  <SelectTrigger className="h-9 w-[160px] text-[13px] bg-card/40 border-border/40">
+                    <CalendarRange className="h-3.5 w-3.5 text-muted-foreground/55 mr-1" />
+                    <SelectValue placeholder="Window" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">All time</SelectItem>
@@ -1058,187 +1108,54 @@ export default function Dashboard() {
                   </SelectContent>
                 </Select>
 
-                <Select
-                  value={insightStatusFilter}
-                  onValueChange={setInsightStatusFilter}
-                  disabled={selectedInsight === "commits"}
-                >
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4 text-muted-foreground" />
+                {selectedInsight !== "commits" && (
+                  <Select value={insightStatusFilter} onValueChange={setInsightStatusFilter}>
+                    <SelectTrigger className="h-9 w-[140px] text-[13px] bg-card/40 border-border/40">
+                      <Filter className="h-3.5 w-3.5 text-muted-foreground/55 mr-1" />
                       <SelectValue placeholder="Status" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All status</SelectItem>
-                    {insightStatusOptions.map((status) => (
-                      <SelectItem key={status} value={status}>{formatStatusLabel(status)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-                <Card className="bg-background/40 shadow-none">
-                  <CardContent className="p-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Window</p>
-                    <p className="mt-1 text-sm font-medium">{insightPeriodFilter === "0" ? "All time" : `Last ${insightPeriodFilter} days`}</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-background/40 shadow-none">
-                  <CardContent className="p-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Author</p>
-                    <p className="mt-1 text-sm font-medium">{insightAuthorFilter === "all" ? "All authors" : insightAuthorFilter}</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-background/40 shadow-none">
-                  <CardContent className="p-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Search</p>
-                    <p className="mt-1 truncate text-sm font-medium">{insightSearch.trim() ? insightSearch : "No keyword"}</p>
-                  </CardContent>
-                </Card>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All status</SelectItem>
+                      {insightStatusOptions.map((status) => (
+                        <SelectItem key={status} value={status}>{formatStatusLabel(status)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </DialogHeader>
           </div>
 
-          <Separator />
+          {/* ── Body ── */}
+          <ScrollArea className="relative min-h-0 flex-1">
+            <div className="px-7 py-6 space-y-5">
+              {/* ─── PR list ─── */}
+              {selectedInsight === "prs" && (
+                <PrListPanel
+                  prs={detailsLoading ? [] : filteredPrs}
+                  loading={detailsLoading}
+                  emptyMessage="No pull requests match these filters."
+                />
+              )}
 
-          <ScrollArea className="min-h-0 flex-1 px-6 py-5">
-            {selectedInsight === "prs" && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Pull Requests</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>PR</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Operator</TableHead>
-                        <TableHead>Delta</TableHead>
-                        <TableHead>Files</TableHead>
-                        <TableHead>Reviews</TableHead>
-                        <TableHead className="text-right">Link</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(detailsLoading ? [] : filteredPrs).slice(0, 40).map((pr) => (
-                        <TableRow key={pr.id}>
-                          <TableCell className="max-w-[420px] truncate font-medium">#{pr.number} {pr.title}</TableCell>
-                          <TableCell>
-                            <Badge variant={getStatusBadgeVariant(pr.status)}>{formatStatusLabel(pr.status)}</Badge>
-                          </TableCell>
-                          <TableCell>{pr.author.name}</TableCell>
-                          <TableCell>+{pr.additions} / -{pr.deletions}</TableCell>
-                          <TableCell>{pr.changedFiles}</TableCell>
-                          <TableCell>{pr.reviewsCount}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" asChild>
-                              <a href={pr.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1">
-                                GitHub <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {!detailsLoading && filteredPrs.length === 0 && (
-                    <p className="py-6 text-center text-sm text-muted-foreground">
-                      No pull requests match the current filters.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+              {/* ─── Commits ─── */}
+              {selectedInsight === "commits" && (
+                <CommitsInsightPanel
+                  data={commitsByWeekday}
+                  events={filteredCommitEvents}
+                />
+              )}
 
-            {selectedInsight === "commits" && (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <CardTitle className="text-base">Weekly Activity</CardTitle>
-                    <span className="text-[11px] font-mono uppercase tracking-[0.16em] text-muted-foreground/60">
-                      {commitsByWeekday.reduce((s, i) => s + i.value, 0)} commits · 7d
-                    </span>
-                  </CardHeader>
-                  <CardContent>
-                    <WeeklyActivityChart data={commitsByWeekday} max={commitBarMax} />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Recent Commits</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {filteredCommitEvents.slice(0, 40).map((activity) => (
-                      <div key={activity.id} className="rounded-xl border border-border/40 bg-card/25 p-3 backdrop-blur-md">
-                        <p className="line-clamp-1 text-sm font-medium">{activity.message}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {activity.developer.name} · {new Date(activity.timestamp).toLocaleString()}
-                        </p>
-                        <div className="mt-2">
-                          <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                            <a href={activity.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1">
-                              Open event <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                    {filteredCommitEvents.length === 0 && (
-                      <p className="py-6 text-center text-sm text-muted-foreground">No commit events in this window.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {selectedInsight === "review" && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">PRs Awaiting Review</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>PR</TableHead>
-                        <TableHead>Operator</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Reviewers</TableHead>
-                        <TableHead>Comments</TableHead>
-                        <TableHead className="text-right">Link</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredReviewPrs.slice(0, 40).map((pr) => (
-                        <TableRow key={pr.id}>
-                          <TableCell className="max-w-[420px] truncate font-medium">#{pr.number} {pr.title}</TableCell>
-                          <TableCell>{pr.author.name}</TableCell>
-                          <TableCell>
-                            <Badge variant={getStatusBadgeVariant(pr.status)}>{formatStatusLabel(pr.status)}</Badge>
-                          </TableCell>
-                          <TableCell>{pr.reviewers.length}</TableCell>
-                          <TableCell>{pr.commentsCount}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" asChild>
-                              <a href={pr.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1">
-                                GitHub <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {filteredReviewPrs.length === 0 && (
-                    <p className="py-6 text-center text-sm text-muted-foreground">No review PRs match the filters.</p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+              {/* ─── Awaiting review ─── */}
+              {selectedInsight === "review" && (
+                <PrListPanel
+                  prs={filteredReviewPrs}
+                  loading={false}
+                  emptyMessage="No PRs awaiting review match these filters."
+                  highlightAge
+                />
+              )}
+            </div>
           </ScrollArea>
         </DialogContent>
       </Dialog>
@@ -1504,174 +1421,419 @@ export default function Dashboard() {
   );
 }
 
-/* ─────────── Local viz: weekly activity bar chart ─────────── */
+/* ─────────── Insight modal: shared sub-components ─────────── */
 
-interface WeeklyActivityChartProps {
-  data: Array<{ label: string; value: number }>;
-  max: number;
+interface PrListItem {
+  id: string | number;
+  number: number;
+  title: string;
+  status: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+  additions: number;
+  deletions: number;
+  changedFiles?: number;
+  commentsCount?: number;
+  reviewsCount?: number;
+  author: { name: string; login?: string; avatar?: string };
+  reviewers: Array<{ name: string; avatar?: string; state?: string; status?: string }>;
+}
+
+interface PrListPanelProps {
+  prs: PrListItem[];
+  loading: boolean;
+  emptyMessage: string;
+  highlightAge?: boolean;
 }
 
 /**
- * Weekly activity chart — refined, minimal aesthetic.
- *
- * Design notes:
- * - Slim bars (8px) with subtle gradient that fades into transparency at
- *   the bottom, so the bar feels rooted in the baseline rather than a
- *   blocky rectangle.
- * - Soft glow above the peak day to draw the eye without a heavy fill.
- * - Dotted average baseline as a quiet reference line.
- * - Compact viewBox so the chart sits as a single elegant unit.
+ * Modern, minimal PR list. Replaces the old shadcn Table — cleaner row,
+ * inline avatars, status pill, impact diff, dot-based meta. Used for both
+ * "Pull Requests" and "Awaiting Review" tabs of the insight modal.
  */
-function WeeklyActivityChart({ data, max }: WeeklyActivityChartProps) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  if (total === 0) {
+function PrListPanel({ prs, loading, emptyMessage, highlightAge = false }: PrListPanelProps) {
+  if (loading) {
     return (
-      <div className="rounded-xl border border-border/40 bg-card/20 p-10 text-center">
-        <p className="text-sm text-muted-foreground/70">No commits in the last 7 days.</p>
+      <div className="rounded-2xl border border-border/40 bg-card/30 p-12 text-center">
+        <div className="inline-flex items-center gap-2 text-muted-foreground/70">
+          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          <span className="text-sm">Loading…</span>
+        </div>
+      </div>
+    );
+  }
+  if (prs.length === 0) {
+    return (
+      <div className="rounded-2xl border border-border/40 bg-card/30 p-14 text-center">
+        <p className="text-sm text-muted-foreground/65">{emptyMessage}</p>
       </div>
     );
   }
 
-  // Geometry — wider viewbox lets us anchor labels precisely
-  const VIEW_W = 700;
-  const VIEW_H = 200;
-  const PAD_X = 24;
-  const PAD_TOP = 28;
-  const PAD_BOTTOM = 32;
-  const usableW = VIEW_W - PAD_X * 2;
-  const usableH = VIEW_H - PAD_TOP - PAD_BOTTOM;
+  return (
+    <div className="rounded-2xl border border-border/40 bg-card/35 backdrop-blur-md overflow-hidden">
+      {prs.slice(0, 60).map((pr, idx) => (
+        <PrRow key={pr.id} pr={pr} highlightAge={highlightAge} isLast={idx === prs.slice(0, 60).length - 1} />
+      ))}
+      {prs.length > 60 && (
+        <div className="px-5 py-3 border-t border-border/30 text-center">
+          <p className="text-[11px] text-muted-foreground/55 font-mono">
+            Showing first 60 of {prs.length} · refine filters to narrow down
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
-  const slotWidth = usableW / data.length;
-  // Bars stay slim regardless of viewport — modern fitness/finance UI vibe
-  const barWidth = 10;
+const PR_ROW_STATUS: Record<string, { label: string; tone: string; dot: string }> = {
+  merged:            { label: "Merged",   tone: "text-violet-300 border-violet-500/35 bg-violet-500/10", dot: "bg-violet-400" },
+  approved:          { label: "Approved", tone: "text-success border-success/35 bg-success/10",          dot: "bg-success" },
+  open:              { label: "Open",     tone: "text-secondary border-secondary/35 bg-secondary/10",   dot: "bg-secondary" },
+  review_requested:  { label: "Awaiting", tone: "text-amber-300 border-amber-500/35 bg-amber-500/10",   dot: "bg-amber-400" },
+  changes_requested: { label: "Changes",  tone: "text-destructive border-destructive/35 bg-destructive/10", dot: "bg-destructive" },
+  closed:            { label: "Closed",   tone: "text-muted-foreground border-border/40 bg-card/40",     dot: "bg-muted-foreground/60" },
+  draft:             { label: "Draft",    tone: "text-muted-foreground border-border/40 bg-card/40",     dot: "bg-muted-foreground/40" },
+};
 
-  const safeMax = max > 0 ? max : 1;
-  const avg = total / data.length;
-  const avgY = PAD_TOP + usableH - (avg / safeMax) * usableH;
+function ageInDays(iso: string): number {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return 0;
+  return Math.floor((Date.now() - t) / 86_400_000);
+}
+
+interface PrRowProps {
+  pr: PrListItem;
+  highlightAge: boolean;
+  isLast: boolean;
+}
+
+function PrRow({ pr, highlightAge, isLast }: PrRowProps) {
+  const statusCfg = PR_ROW_STATUS[pr.status] ?? PR_ROW_STATUS.draft;
+  const age = ageInDays(pr.createdAt);
+  const ageWarn = highlightAge && age >= 3;
+
+  return (
+    <div
+      className={`group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-card/55 ${
+        isLast ? "" : "border-b border-border/25"
+      }`}
+    >
+      {/* Author avatar */}
+      <Avatar className="h-7 w-7 ring-1 ring-border/40 shrink-0">
+        <AvatarImage src={pr.author.avatar} />
+        <AvatarFallback className="text-[10px]">
+          {(pr.author.name ?? "?").charAt(0)}
+        </AvatarFallback>
+      </Avatar>
+
+      {/* Title + meta */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[11px] text-muted-foreground/45 tabular-nums">
+            #{pr.number}
+          </span>
+          <a
+            href={pr.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[13.5px] font-medium text-foreground truncate hover:text-primary transition-colors"
+          >
+            {pr.title}
+          </a>
+        </div>
+        <div className="mt-1 flex items-center gap-2.5 text-[11px] text-muted-foreground/65">
+          <span className="truncate">{pr.author.name}</span>
+          <span className="text-muted-foreground/30">·</span>
+          <span className={ageWarn ? "text-amber-400 font-medium" : ""}>
+            {age === 0 ? "today" : `${age}d ago`}
+          </span>
+          {(pr.additions > 0 || pr.deletions > 0) && (
+            <>
+              <span className="text-muted-foreground/30">·</span>
+              <span className="font-mono tabular-nums">
+                {pr.additions > 0 && <span className="text-success">+{pr.additions}</span>}
+                {pr.additions > 0 && pr.deletions > 0 && <span className="text-muted-foreground/35"> </span>}
+                {pr.deletions > 0 && <span className="text-destructive">−{pr.deletions}</span>}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Reviewers stack (when present) */}
+      {pr.reviewers.length > 0 && (
+        <div className="hidden md:flex items-center -space-x-1.5 shrink-0">
+          {pr.reviewers.slice(0, 3).map((r, i) => (
+            <Avatar key={`${r.name}-${i}`} className="h-5 w-5 ring-1 ring-card">
+              <AvatarImage src={r.avatar} />
+              <AvatarFallback className="text-[8px]">{r.name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+          ))}
+          {pr.reviewers.length > 3 && (
+            <span className="h-5 min-w-5 px-1 rounded-full bg-muted/60 ring-1 ring-card text-[8px] font-semibold flex items-center justify-center text-muted-foreground">
+              +{pr.reviewers.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Status pill */}
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10.5px] font-medium ${statusCfg.tone}`}
+      >
+        <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`} />
+        {statusCfg.label}
+      </span>
+
+      {/* External link */}
+      <a
+        href={pr.url}
+        target="_blank"
+        rel="noreferrer"
+        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/55 hover:text-foreground shrink-0"
+        aria-label="Open on GitHub"
+      >
+        <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    </div>
+  );
+}
+
+/* ─────────── Commits insight panel (recharts-powered) ─────────── */
+
+interface CommitsInsightPanelProps {
+  data: Array<{ label: string; value: number }>;
+  events: RecentActivity[];
+}
+
+function CommitsInsightPanel({ data, events }: CommitsInsightPanelProps) {
+  const total = data.reduce((s, d) => s + d.value, 0);
   const peakIdx = data.reduce(
     (best, item, i) => (item.value > data[best].value ? i : best),
     0,
   );
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const avg = total > 0 ? Math.round(total / data.length) : 0;
+
+  const chartData = data.map((d, i) => ({
+    name: d.label.toUpperCase(),
+    value: d.value,
+    isPeak: i === peakIdx && d.value > 0,
+  }));
 
   return (
-    <div className="rounded-xl border border-border/40 bg-card/20 p-3">
-      <svg
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-        className="w-full h-[200px]"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        <defs>
-          {/* Bar fill — fades into transparent at the bottom */}
-          <linearGradient id="weekly-bar" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(262 95% 75%)" stopOpacity="1" />
-            <stop offset="55%" stopColor="hsl(245 88% 65%)" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="hsl(232 70% 40%)" stopOpacity="0" />
-          </linearGradient>
-
-          {/* Peak dot glow */}
-          <radialGradient id="peak-glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="hsl(262 100% 80%)" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="hsl(262 100% 80%)" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        {/* Bottom baseline — barely there */}
-        <line
-          x1={PAD_X}
-          y1={PAD_TOP + usableH + 0.5}
-          x2={VIEW_W - PAD_X}
-          y2={PAD_TOP + usableH + 0.5}
-          stroke="hsl(220 14% 50%)"
-          strokeWidth="1"
-          opacity="0.18"
+    <div className="space-y-5">
+      {/* Header strip with KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <InsightKpi label="Total" value={total} hint="last 7 days" />
+        <InsightKpi label="Peak day" value={data[peakIdx]?.value ?? 0} hint={data[peakIdx]?.label ?? "—"} />
+        <InsightKpi label="Daily avg" value={avg} hint="commits/day" />
+        <InsightKpi
+          label="Active days"
+          value={data.filter((d) => d.value > 0).length}
+          hint="of 7"
         />
+      </div>
 
-        {/* Average reference line — dotted */}
-        <line
-          x1={PAD_X}
-          y1={avgY}
-          x2={VIEW_W - PAD_X}
-          y2={avgY}
-          stroke="hsl(220 30% 65%)"
-          strokeWidth="0.8"
-          strokeDasharray="2 4"
-          opacity="0.25"
+      {/* Chart */}
+      <div className="rounded-2xl border border-border/40 bg-card/35 backdrop-blur-md p-5 relative overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full opacity-30 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle, hsl(262 95% 65% / 0.20) 0%, transparent 70%)",
+          }}
         />
+        <div className="relative">
+          <header className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-[14px] font-semibold leading-none">Weekly distribution</h3>
+              <p className="mt-1 text-[11.5px] text-muted-foreground/70">
+                Daily commits over the last 7 days · peak highlighted
+              </p>
+            </div>
+            <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
+              {total} commits · 7d
+            </span>
+          </header>
 
-        {data.map((item, idx) => {
-          const slotX = PAD_X + idx * slotWidth;
-          const cx = slotX + slotWidth / 2;
-          const heightRatio = item.value / safeMax;
-          const barH = Math.max(heightRatio * usableH, item.value > 0 ? 4 : 0);
-          const y = PAD_TOP + usableH - barH;
-          const x = cx - barWidth / 2;
-          const isPeak = idx === peakIdx && item.value > 0;
-
-          return (
-            <g key={item.label}>
-              {/* Peak halo */}
-              {isPeak && (
-                <circle cx={cx} cy={y - 6} r={26} fill="url(#peak-glow)" />
-              )}
-
-              {/* Bar */}
-              {barH > 0 && (
-                <rect
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={barH}
-                  rx={5}
-                  fill="url(#weekly-bar)"
-                />
-              )}
-
-              {/* Top cap dot — refined finish */}
-              {barH > 0 && (
-                <circle
-                  cx={cx}
-                  cy={y}
-                  r={isPeak ? 3 : 1.6}
-                  fill={isPeak ? "hsl(0 0% 100%)" : "hsl(262 95% 78%)"}
-                  style={
-                    isPeak
-                      ? { filter: "drop-shadow(0 0 4px hsl(262 95% 75%))" }
-                      : undefined
-                  }
-                />
-              )}
-
-              {/* Value above */}
-              <text
-                x={cx}
-                y={Math.max(y - 12, PAD_TOP + 6)}
-                textAnchor="middle"
-                fill={
-                  isPeak ? "hsl(220 30% 95%)" : "hsl(220 22% 70%)"
-                }
-                fontSize="11"
-                fontWeight={isPeak ? 600 : 400}
-                fontFamily="ui-monospace, monospace"
+          {total === 0 ? (
+            <div className="py-12 text-center">
+              <p className="text-sm text-muted-foreground/65">
+                No commits in the last 7 days.
+              </p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 16, right: 8, left: -16, bottom: 4 }}
+                barCategoryGap="22%"
               >
-                {item.value}
-              </text>
+                <defs>
+                  <linearGradient id="commits-bar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(262 95% 75%)" stopOpacity={0.95} />
+                    <stop offset="60%" stopColor="hsl(245 88% 65%)" stopOpacity={0.85} />
+                    <stop offset="100%" stopColor="hsl(232 78% 45%)" stopOpacity={0.25} />
+                  </linearGradient>
+                  <linearGradient id="commits-bar-peak" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(320 95% 78%)" stopOpacity={1} />
+                    <stop offset="55%" stopColor="hsl(280 90% 70%)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="hsl(262 78% 45%)" stopOpacity={0.3} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  vertical={false}
+                  stroke="hsl(220 14% 50%)"
+                  strokeOpacity={0.12}
+                  strokeDasharray="2 4"
+                />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{
+                    fill: "hsl(220 14% 55%)",
+                    fontSize: 10,
+                    fontFamily: "ui-monospace, monospace",
+                    letterSpacing: 2,
+                  }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                  tick={{
+                    fill: "hsl(220 14% 45%)",
+                    fontSize: 10,
+                    fontFamily: "ui-monospace, monospace",
+                  }}
+                  domain={[0, max + Math.ceil(max * 0.15)]}
+                />
+                <RechartsTooltip
+                  cursor={{ fill: "hsl(220 22% 18% / 0.5)", radius: 8 }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const p = payload[0].payload;
+                    return (
+                      <div className="rounded-lg border border-border/55 bg-card/95 backdrop-blur-md px-3 py-2 shadow-orbit">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/65">
+                          {p.name}
+                        </p>
+                        <p className="mt-1 font-display text-[18px] font-light leading-none tabular-nums">
+                          {p.value}
+                        </p>
+                        <p className="mt-1 text-[10.5px] text-muted-foreground/65">
+                          {p.value === 1 ? "commit" : "commits"}
+                          {p.isPeak && " · peak"}
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar
+                  dataKey="value"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={42}
+                >
+                  {chartData.map((entry, idx) => (
+                    <Cell
+                      key={`bar-${idx}`}
+                      fill={entry.isPeak ? "url(#commits-bar-peak)" : "url(#commits-bar)"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
 
-              {/* Day label below */}
-              <text
-                x={cx}
-                y={VIEW_H - 12}
-                textAnchor="middle"
-                fill="hsl(220 14% 50%)"
-                fontSize="9"
-                fontFamily="ui-monospace, monospace"
-                letterSpacing="2"
-              >
-                {item.label.toUpperCase()}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+      {/* Recent commits list */}
+      <div className="rounded-2xl border border-border/40 bg-card/35 backdrop-blur-md overflow-hidden">
+        <header className="flex items-center justify-between px-5 py-3.5 border-b border-border/30">
+          <div className="flex items-center gap-2">
+            <GitCommit className="h-3.5 w-3.5 text-muted-foreground/60" />
+            <h3 className="text-[13px] font-semibold">Recent commits</h3>
+            {events.length > 0 && (
+              <span className="rounded-full border border-border/45 bg-muted/30 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground/70">
+                {events.length}
+              </span>
+            )}
+          </div>
+        </header>
+
+        {events.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className="text-sm text-muted-foreground/55">No commit events in this window.</p>
+          </div>
+        ) : (
+          events.slice(0, 50).map((activity, i, arr) => (
+            <div
+              key={activity.id}
+              className={`group flex items-center gap-3.5 px-5 py-3 hover:bg-card/55 transition-colors ${
+                i === arr.length - 1 ? "" : "border-b border-border/25"
+              }`}
+            >
+              <div className="h-7 w-7 rounded-lg bg-card/50 border border-border/40 flex items-center justify-center text-muted-foreground/65 shrink-0">
+                <GitCommit className="h-3 w-3" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-foreground truncate">
+                  {activity.message}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground/65">
+                  {activity.developer.name} ·{" "}
+                  <span className="font-mono">
+                    {new Date(activity.timestamp).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </p>
+              </div>
+              {activity.url && (
+                <a
+                  href={activity.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/55 hover:text-foreground shrink-0"
+                  aria-label="Open commit"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface InsightKpiProps {
+  label: string;
+  value: number;
+  hint?: string;
+}
+
+function InsightKpi({ label, value, hint }: InsightKpiProps) {
+  return (
+    <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-md px-3.5 py-3 transition-colors hover:border-primary/30">
+      <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground/55">
+        {label}
+      </p>
+      <p className="mt-1.5 font-display text-[24px] font-light leading-none tabular-nums">
+        {value}
+      </p>
+      {hint && (
+        <p className="mt-1 text-[10px] text-muted-foreground/55">{hint}</p>
+      )}
     </div>
   );
 }
