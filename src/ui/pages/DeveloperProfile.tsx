@@ -133,74 +133,82 @@ const PR_STATUS_CONFIG: Record<PRStatus, { label: string; dot: string; badge: st
   merged:            { label: 'Merged',     dot: 'bg-violet-400',           badge: 'bg-violet-500/10 text-violet-600 border-violet-500/25 dark:text-violet-400' },
 };
 
-// ── Score ring (SVG) ─────────────────────────────────────────
-interface ScoreRingProps {
-  value: number;
-  label: string;
-  color: string;
-  size?: number;
-}
-
-const ScoreRing = ({ value, label, color, size = 72 }: ScoreRingProps) => {
-  const r = (size / 2) - 7;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (value / 100) * circ;
-  const cx = size / 2;
-  const cy = size / 2;
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth="5" stroke="currentColor" className="text-muted/25" />
-          <circle
-            cx={cx} cy={cy} r={r}
-            fill="none" strokeWidth="5"
-            stroke={color}
-            strokeDasharray={circ}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[15px] font-bold text-foreground">{value}</span>
-        </div>
-      </div>
-      <span className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">{label}</span>
-    </div>
-  );
-};
-
-// ── Stat card ─────────────────────────────────────────────────
+// ── Stat card — minimal, glassy, on-brand ────────────────────
 interface StatCardProps {
   icon: React.ReactNode;
   label: string;
   value: number | string;
   delay?: number;
+  hint?: string;
 }
 
-const StatCard = ({ icon, label, value, delay = 0 }: StatCardProps) => (
+const StatCard = ({ icon, label, value, delay = 0, hint }: StatCardProps) => (
   <motion.div
-    initial={{ opacity: 0, y: 12 }}
+    initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.25 }}
-    className="flex-1 min-w-0 p-4 rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm"
+    className="flex-1 min-w-0 px-3.5 py-3 rounded-xl border border-border/40 bg-card/35 backdrop-blur-md transition-colors hover:border-primary/30"
   >
-    <div className="flex items-center gap-2 text-muted-foreground mb-2.5">
-      <span className="shrink-0">{icon}</span>
-      <span className="text-xs font-semibold uppercase tracking-wider truncate">{label}</span>
+    <div className="flex items-center gap-1.5 text-muted-foreground/65 mb-1.5">
+      <span className="shrink-0 opacity-80">{icon}</span>
+      <span className="text-[10px] font-mono font-medium uppercase tracking-[0.14em] truncate">{label}</span>
     </div>
-    <p className="text-2xl font-semibold text-foreground tabular-nums">{value}</p>
+    <p className="font-display text-[24px] font-light leading-none tabular-nums text-foreground">{value}</p>
+    {hint && (
+      <p className="mt-1 text-[10px] text-muted-foreground/55">{hint}</p>
+    )}
   </motion.div>
 );
 
 // ── Performance tier ──────────────────────────────────────────
 function getPerformanceTier(score: number) {
-  if (score >= 90) return { label: 'Top Performer',      bg: 'bg-emerald-500/12', text: 'text-emerald-500', border: 'border-emerald-500/25' };
-  if (score >= 75) return { label: 'Strong Performer',   bg: 'bg-blue-500/12',    text: 'text-blue-500',    border: 'border-blue-500/25' };
-  if (score >= 60) return { label: 'Solid Contributor',  bg: 'bg-yellow-500/12',  text: 'text-yellow-500',  border: 'border-yellow-500/25' };
-  return             { label: 'Needs Attention',        bg: 'bg-red-500/12',     text: 'text-red-500',     border: 'border-red-500/25' };
+  if (score >= 90) return { label: 'Top Performer',     bg: 'bg-success/12',    text: 'text-success',    border: 'border-success/25',    glow: 'hsl(152 72% 50%)' };
+  if (score >= 75) return { label: 'Strong Performer',  bg: 'bg-secondary/12',  text: 'text-secondary',  border: 'border-secondary/25',  glow: 'hsl(232 78% 64%)' };
+  if (score >= 60) return { label: 'Solid Contributor', bg: 'bg-primary/12',    text: 'text-primary',    border: 'border-primary/25',    glow: 'hsl(262 88% 68%)' };
+  return             { label: 'Needs Attention',       bg: 'bg-amber-500/12',  text: 'text-amber-400',  border: 'border-amber-500/25',  glow: 'hsl(40 95% 60%)' };
 }
+
+// ── Donut score — single elegant ring used in Performance Breakdown ──
+interface DonutScoreProps {
+  value: number;
+  /** 0–100 baseline used for the trailing ring outline */
+  size?: number;
+  color: string;
+  unit?: string;
+}
+
+const DonutScore = ({ value, size = 92, color, unit }: DonutScoreProps) => {
+  const r = (size / 2) - 8;
+  const circ = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(100, value));
+  const offset = circ - (clamped / 100) * circ;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth="3.5" stroke="currentColor" className="text-border/40" />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          strokeWidth="3.5"
+          stroke={color}
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ filter: `drop-shadow(0 0 6px ${color}88)` }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-display text-[22px] font-light leading-none tabular-nums">{value}</span>
+        {unit && <span className="text-[8px] font-mono mt-0.5 text-muted-foreground/55 uppercase tracking-wider">{unit}</span>}
+      </div>
+    </div>
+  );
+};
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -566,8 +574,24 @@ export default function DeveloperProfile() {
   });
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_16%,hsl(var(--accent)/0.14),transparent_40%),radial-gradient(circle_at_86%_8%,hsl(var(--primary)/0.1),transparent_38%),radial-gradient(circle_at_46%_86%,hsl(var(--secondary)/0.12),transparent_42%)]" />
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden text-foreground">
+      {/* Backdrop blooms — same vocabulary as Profile/Settings */}
+      <div className="pointer-events-none absolute inset-0">
+        <div
+          className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full opacity-50 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 50%, hsl(262 95% 70% / 0.10) 0%, transparent 60%)",
+          }}
+        />
+        <div
+          className="absolute -bottom-32 -right-32 w-[640px] h-[640px] rounded-full opacity-40 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 50%, hsl(320 80% 65% / 0.08) 0%, transparent 60%)",
+          }}
+        />
+      </div>
 
       <DashboardHeader
         activeTab="squads"
@@ -579,366 +603,364 @@ export default function DeveloperProfile() {
       />
 
       <main
-        className="flex-1 overflow-y-auto pt-[138px] pr-8 pb-10 relative z-10 transition-[padding-left] duration-300"
+        className="flex-1 overflow-y-auto pr-6 md:pr-10 pt-[148px] pb-16 relative z-10 transition-[padding-left] duration-300"
         style={{ paddingLeft: contentLeft + 16 }}
       >
         <div className="max-w-6xl mx-auto space-y-5">
 
-          {/* Back button */}
+          {/* Back link */}
           <motion.button
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             whileHover={{ x: -2 }}
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground/70 hover:text-foreground transition-colors px-1"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Back
           </motion.button>
 
           {/* ── Hero card ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="relative rounded-2xl border border-border/40 bg-card/40 backdrop-blur-xl overflow-hidden"
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="artemis-panel relative overflow-hidden rounded-[28px]"
           >
-            {/* Decorative avatar blobs */}
-            {developer.avatarUrl && (
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div
-                  className="absolute blur-3xl rounded-full opacity-[0.08]"
-                  style={{ width: 300, height: 300, top: '-60px', left: '-40px' }}
-                >
-                  <img src={developer.avatarUrl} className="w-full h-full object-cover rounded-full" alt="" />
-                </div>
-                <div
-                  className="absolute blur-3xl rounded-full opacity-[0.05]"
-                  style={{ width: 200, height: 200, bottom: '-40px', right: '10%' }}
-                >
-                  <img src={developer.avatarUrl} className="w-full h-full object-cover rounded-full" alt="" />
-                </div>
-              </div>
-            )}
+            {/* Aurora bloom in corner */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full opacity-50 blur-3xl"
+              style={{
+                background: `radial-gradient(circle, ${tier.glow}26 0%, transparent 70%)`,
+              }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+            />
 
-            <div className="relative z-10 p-7">
-              {/* Top row: avatar + info + overall score */}
-              <div className="flex items-start gap-6 mb-6">
-                {/* Avatar */}
-                <div className="relative shrink-0">
-                  <Avatar className="h-20 w-20 ring-2 ring-border/50 shadow-lg">
+            <div className="relative p-7 md:p-9">
+              {/* Top row: avatar + identity + overall score */}
+              <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-7 items-center">
+                {/* Avatar with aurora ring */}
+                <div className="relative">
+                  <div
+                    aria-hidden
+                    className="absolute -inset-2 rounded-full bg-aurora-gradient opacity-50 blur-md"
+                  />
+                  <Avatar className="relative h-[112px] w-[112px] ring-2 ring-background shadow-[0_18px_40px_-12px_hsl(232_60%_2%/0.7)]">
                     <AvatarImage
                       src={
                         developer.avatarUrl ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(developer.name)}&background=random&size=160`
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(developer.name)}&background=random&size=224`
                       }
                     />
-                    <AvatarFallback className="text-2xl font-semibold">
+                    <AvatarFallback className="text-3xl font-display font-light">
                       {developer.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                 </div>
 
-                {/* Name + handles */}
-                <div className="flex-1 min-w-0 pt-1">
-                  <div className="flex items-center gap-3 flex-wrap mb-1">
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">{developer.name}</h1>
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${tier.bg} ${tier.text} ${tier.border}`}>
+                {/* Identity */}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="font-display text-[36px] font-light leading-none tracking-[-0.025em]">
+                      {developer.name}
+                    </h1>
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${tier.bg} ${tier.text} ${tier.border}`}
+                    >
+                      <Sparkles className="h-3 w-3" />
                       {tier.label}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
-                    <Github className="h-3.5 w-3.5" />
-                    <span>{developer.githubUsername || 'No GitHub linked'}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+
+                  <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Github className="h-3.5 w-3.5 text-muted-foreground/60" />
+                      <span>{developer.githubUsername ? `@${developer.githubUsername}` : 'No GitHub linked'}</span>
+                    </div>
                     {developer.email && (
-                      <span className="flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5 shrink-0" />
-                        {developer.email}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5 text-muted-foreground/60" />
+                        <span>{developer.email}</span>
+                      </div>
                     )}
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 shrink-0" />
-                      Member since {sinceDate}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 shrink-0" />
-                      {developer.stats.period.days} days tracked
-                    </span>
+                    <span className="text-muted-foreground/45">·</span>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground/60" />
+                      <span>Member since {sinceDate}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Overall score */}
-                <div className="shrink-0 flex flex-col items-center gap-1.5 pt-1">
-                  <div className="relative">
-                    <svg width="80" height="80" style={{ transform: 'rotate(-90deg)' }}>
-                      <circle cx="40" cy="40" r="33" fill="none" strokeWidth="6" stroke="currentColor" className="text-muted/20" />
-                      <circle
-                        cx="40" cy="40" r="33"
-                        fill="none" strokeWidth="6"
-                        stroke={overallScore >= 90 ? '#10b981' : overallScore >= 75 ? '#3b82f6' : overallScore >= 60 ? '#f59e0b' : '#ef4444'}
-                        strokeDasharray={2 * Math.PI * 33}
-                        strokeDashoffset={2 * Math.PI * 33 * (1 - overallScore / 100)}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-lg font-bold text-foreground leading-none">{overallScore}</span>
-                      <span className="text-[8px] text-muted-foreground font-medium mt-0.5">SCORE</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Overall</span>
+                {/* Overall score donut */}
+                <div className="hidden md:flex flex-col items-center gap-2">
+                  <DonutScore value={overallScore} color={tier.glow} size={92} unit="score" />
+                  <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
+                    Overall
+                  </span>
                 </div>
               </div>
 
-              {/* Stats strip — values are bound to the same N-day window
-                  used by the Engineering Overview table on the dashboard,
-                  so cross-page numbers always agree. */}
-              <div className="space-y-2">
+              {/* KPI strip */}
+              <div className="mt-7 space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
                     Last {periodWindowDays} days
                   </span>
                   <span className="h-px flex-1 bg-border/40" />
                 </div>
-                <div className="flex gap-3">
-                  <StatCard icon={<GitCommit className="h-3.5 w-3.5" />} label="Commits" value={realCommits} delay={0.05} />
-                  <StatCard icon={<GitPullRequest className="h-3.5 w-3.5" />} label="Pull Requests" value={realPRCount} delay={0.1} />
-                  <StatCard icon={<Eye className="h-3.5 w-3.5" />} label="Reviews" value={realReviews} delay={0.15} />
-                  <StatCard icon={<GitMerge className="h-3.5 w-3.5" />} label="Merged PRs" value={realMerged} delay={0.2} />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <StatCard icon={<GitCommit className="h-3 w-3" />} label="Commits" value={realCommits} delay={0.05} />
+                  <StatCard icon={<GitPullRequest className="h-3 w-3" />} label="Pull Requests" value={realPRCount} delay={0.1} />
+                  <StatCard icon={<Eye className="h-3 w-3" />} label="Reviews" value={realReviews} delay={0.15} />
+                  <StatCard icon={<GitMerge className="h-3 w-3" />} label="Merged PRs" value={realMerged} delay={0.2} />
                 </div>
               </div>
             </div>
-          </motion.div>
+          </motion.section>
 
-          {/* ── AI Insights + Score rings ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {/* AI Insights (2/3) */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.3 }}
-              className="lg:col-span-2 rounded-2xl border border-primary/15 bg-primary/[0.03] backdrop-blur-xl p-6 relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 p-5 opacity-[0.06] pointer-events-none">
-                <BrainCircuit className="h-28 w-28 text-primary" />
-              </div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between gap-2.5 mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                      <BrainCircuit className="h-4 w-4 text-primary" />
-                    </div>
-                    <h3 className="text-base font-semibold text-foreground">AI Performance Insights</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleClearMemory}
-                      disabled={isClearingMemory || isAnalyzing || isAnalyzingCommits}
-                      title="Wipe this developer's AI memory (mem0 + cached insight snapshot)"
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-destructive/30 bg-destructive/5 text-destructive/90 hover:bg-destructive/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isClearingMemory
-                        ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        : <Trash2 className="h-3.5 w-3.5" />}
-                      {isClearingMemory ? 'Clearing…' : 'Clear AI memory'}
-                    </button>
-                    <button
-                      onClick={handleAnalyzeCommits}
-                      disabled={isAnalyzingCommits || isAnalyzing || isClearingMemory}
-                      title="Analyze the developer's most recent unanalyzed commits (no PR required)"
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isAnalyzingCommits
-                        ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        : <GitCommitHorizontal className="h-3.5 w-3.5" />}
-                      {isAnalyzingCommits
-                        ? `Commits… ${Math.max(0, aiAnalyses.length - commitBaseline)}/${commitQueued}`
-                        : 'Analyze commits'}
-                    </button>
-                    <button
-                      onClick={handleAnalyzePRs}
-                      disabled={isAnalyzing || devPrUuids.length === 0 || isAnalyzingCommits || isClearingMemory}
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isAnalyzing ? (
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5" />
-                      )}
-                      {isAnalyzing
-                        ? `Analyzing… ${Math.max(0, aiAnalyses.length - analyzeBaseline)}/${analyzeQueued}`
-                        : 'Analyze PRs'}
-                    </button>
-                  </div>
-                </div>
-                {analyzeError && (
-                  <p className="text-xs text-red-400 mb-3">{analyzeError}</p>
-                )}
-                {clearMemoryFeedback && (
-                  <p className="text-xs text-emerald-400 mb-3">{clearMemoryFeedback}</p>
-                )}
+          {/* ── AI Insights + Performance Breakdown ── */}
+          {(() => {
+            const useServer = serverInsights && serverInsights.memoryCount > 0;
+            const summaryText = useServer ? serverInsights!.summary : aiInsights.summary;
+            const strengthsList = useServer ? serverInsights!.strengths : aiInsights.strengths;
+            const growthList = useServer ? serverInsights!.growthAreas : aiInsights.areasForImprovement;
+            const techList = useServer ? serverInsights!.dominantTechnologies : [];
+            const hasInsights = useServer || aiInsights.hasData;
 
-                {(() => {
-                  const useServer = serverInsights && serverInsights.memoryCount > 0;
-                  const summaryText = useServer ? serverInsights!.summary : aiInsights.summary;
-                  const strengthsList = useServer ? serverInsights!.strengths : aiInsights.strengths;
-                  const growthList = useServer ? serverInsights!.growthAreas : aiInsights.areasForImprovement;
-                  const techList = useServer ? serverInsights!.dominantTechnologies : [];
-                  const showCard = useServer || aiInsights.hasData;
-                  return (
-                    <>
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-xl">
-                        {summaryText}
-                      </p>
+            const trendInfo = useServer && serverInsights!.trendNarrative
+              ? { label: serverInsights!.trendNarrative, kind: 'narrative' as const }
+              : aiEvolution
+                ? {
+                    label: aiEvolution.trend.charAt(0).toUpperCase() + aiEvolution.trend.slice(1),
+                    kind: aiEvolution.trend as 'improving' | 'declining' | 'stable',
+                  }
+                : null;
 
-                      {showCard ? (
-                        <>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div>
-                              <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
-                                <Zap className="h-3.5 w-3.5 text-amber-400" />
-                                Strengths
-                              </h4>
-                              <ul className="space-y-2">
-                                {strengthsList.map((s, i) => (
-                                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                                    {s}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <h4 className="text-xs font-semibold text-foreground flex items-center gap-2 mb-3 uppercase tracking-wider">
-                                <TrendingUp className="h-3.5 w-3.5 text-blue-400" />
-                                Areas for Growth
-                              </h4>
-                              <ul className="space-y-2">
-                                {growthList.map((a, i) => (
-                                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                                    <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                                    {a}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-5">
+                {/* ── AI Insights ── */}
+                <motion.section
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.5 }}
+                  className="artemis-panel relative overflow-hidden rounded-[24px]"
+                >
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -top-24 -right-12 w-72 h-72 rounded-full opacity-30 blur-3xl"
+                    style={{
+                      background:
+                        "radial-gradient(circle, hsl(262 95% 65% / 0.30) 0%, transparent 70%)",
+                    }}
+                  />
+
+                  <div className="relative p-6 md:p-7">
+                    {/* Header row: title + actions */}
+                    <header className="flex items-start justify-between gap-3 flex-wrap mb-5">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl border border-primary/30 bg-primary/10 flex items-center justify-center text-primary">
+                          <BrainCircuit className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-[15px] font-semibold leading-none">
+                              AI Performance Insights
+                            </h3>
+                            <span className="inline-flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-2 py-0.5 text-[10px] font-medium text-secondary">
+                              <Sparkles className="h-2.5 w-2.5" />
+                              AI
+                            </span>
                           </div>
+                          <p className="mt-1 text-[11.5px] text-muted-foreground/70 leading-relaxed">
+                            Narrative built from {aiAnalyses.length} analyzed PR{aiAnalyses.length !== 1 ? 's' : ''}
+                            {useServer ? ` · ${serverInsights!.memoryCount} memories` : ''}.
+                          </p>
+                        </div>
+                      </div>
 
-                          {techList.length > 0 && (
-                            <div className="mt-5 flex flex-wrap items-center gap-2">
-                              <span className="text-xs text-muted-foreground/60 uppercase tracking-wider">
-                                Dominant tech:
-                              </span>
-                              {techList.map((t) => (
-                                <span
-                                  key={t}
-                                  className="text-xs px-2 py-1 rounded-md border border-primary/25 bg-primary/10 text-primary"
-                                >
-                                  {t}
+                      {/* Action group — same actions, much cleaner visual */}
+                      <div className="flex items-center gap-1.5">
+                        <ActionButton
+                          icon={isAnalyzing ? RefreshCw : Sparkles}
+                          label={
+                            isAnalyzing
+                              ? `Analyzing ${Math.max(0, aiAnalyses.length - analyzeBaseline)}/${analyzeQueued}`
+                              : 'Analyze PRs'
+                          }
+                          onClick={handleAnalyzePRs}
+                          disabled={isAnalyzing || devPrUuids.length === 0 || isAnalyzingCommits || isClearingMemory}
+                          variant="primary"
+                          loading={isAnalyzing}
+                        />
+                        <ActionButton
+                          icon={isAnalyzingCommits ? RefreshCw : GitCommitHorizontal}
+                          label={
+                            isAnalyzingCommits
+                              ? `Commits ${Math.max(0, aiAnalyses.length - commitBaseline)}/${commitQueued}`
+                              : 'Commits'
+                          }
+                          onClick={handleAnalyzeCommits}
+                          disabled={isAnalyzingCommits || isAnalyzing || isClearingMemory}
+                          variant="secondary"
+                          loading={isAnalyzingCommits}
+                          title="Analyze the developer's recent unanalyzed commits"
+                        />
+                        <ActionButton
+                          icon={isClearingMemory ? RefreshCw : Trash2}
+                          label=""
+                          onClick={handleClearMemory}
+                          disabled={isClearingMemory || isAnalyzing || isAnalyzingCommits}
+                          variant="ghost-destructive"
+                          loading={isClearingMemory}
+                          title="Clear AI memory"
+                        />
+                      </div>
+                    </header>
+
+                    {/* Inline feedback / errors */}
+                    {analyzeError && (
+                      <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-[12px] text-destructive">
+                        {analyzeError}
+                      </div>
+                    )}
+                    {clearMemoryFeedback && (
+                      <div className="mb-4 rounded-lg border border-success/30 bg-success/8 px-3 py-2 text-[12px] text-success">
+                        {clearMemoryFeedback}
+                      </div>
+                    )}
+
+                    {/* Body */}
+                    {!hasInsights ? (
+                      <div className="py-10 text-center max-w-md mx-auto">
+                        <div className="h-12 w-12 rounded-2xl bg-card/50 border border-border/40 flex items-center justify-center mx-auto mb-3">
+                          <BrainCircuit className="h-5 w-5 text-muted-foreground/60" />
+                        </div>
+                        <p className="text-[14px] font-medium text-foreground">No analyses yet</p>
+                        <p className="mt-1.5 text-[12.5px] text-muted-foreground/75 leading-relaxed">
+                          Click <span className="text-primary font-medium">Analyze PRs</span> above to generate
+                          a narrative on how this developer ships code.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Narrative */}
+                        <p className="text-[13.5px] leading-relaxed text-muted-foreground/95 max-w-2xl">
+                          {summaryText}
+                        </p>
+
+                        {/* Strengths + Growth — clean two-column */}
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <InsightList
+                            heading="Strengths"
+                            items={strengthsList}
+                            tone="success"
+                            icon={Zap}
+                          />
+                          <InsightList
+                            heading="Growth areas"
+                            items={growthList}
+                            tone="warning"
+                            icon={TrendingUp}
+                          />
+                        </div>
+
+                        {/* Tech tags + trend footer */}
+                        {(techList.length > 0 || trendInfo) && (
+                          <div className="mt-6 pt-4 border-t border-border/30 flex flex-wrap items-center gap-x-4 gap-y-2.5">
+                            {techList.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
+                                  Stack
                                 </span>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-lg px-4 py-3 bg-muted/10">
-                          <BrainCircuit className="h-4 w-4 shrink-0" />
-                          Trigger an analysis on this developer's PRs to generate real insights.
-                        </div>
-                      )}
+                                {techList.map((t) => (
+                                  <span
+                                    key={t}
+                                    className="text-[11px] px-2 py-0.5 rounded-full border border-primary/25 bg-primary/8 text-primary"
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
 
-                      {(useServer || (aiEvolution && aiInsights.hasData)) && (
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-muted-foreground/60">Complexity trend:</span>
-                          {useServer && serverInsights!.trendNarrative ? (
-                            <span className="text-xs text-foreground/80">
-                              {serverInsights!.trendNarrative}
-                            </span>
-                          ) : aiEvolution ? (
-                            <span className={`text-xs font-semibold flex items-center gap-1 ${
-                              aiEvolution.trend === 'improving' ? 'text-emerald-500' :
-                              aiEvolution.trend === 'declining' ? 'text-red-400' : 'text-muted-foreground'
-                            }`}>
-                              {aiEvolution.trend === 'improving' ? <ArrowUpRight className="h-3.5 w-3.5" /> :
-                               aiEvolution.trend === 'declining' ? <ArrowDownRight className="h-3.5 w-3.5" /> :
-                               <Minus className="h-3.5 w-3.5" />}
-                              {aiEvolution.trend.charAt(0).toUpperCase() + aiEvolution.trend.slice(1)}
-                            </span>
-                          ) : null}
-                          <span className="text-xs text-muted-foreground/50">
-                            · {aiAnalyses.length} PR{aiAnalyses.length !== 1 ? 's' : ''} analyzed
-                            {useServer ? ` · ${serverInsights!.memoryCount} memories` : ''}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            </motion.div>
+                            {trendInfo && (
+                              <div className="flex items-center gap-2 ml-auto">
+                                <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
+                                  Trend
+                                </span>
+                                <TrendPill kind={trendInfo.kind} label={trendInfo.label} />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </motion.section>
 
-            {/* Score rings (1/3) */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-              className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-xl p-6 flex flex-col"
-            >
-              <h3 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-6">
-                Performance Breakdown
-              </h3>
-              <div className="flex-1 flex flex-col justify-around gap-4">
-                <div className="flex items-center gap-4">
-                  <ScoreRing value={aiInsights.complexityScore} label="Complexity" color="#3b82f6" />
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground/70">Avg PR Complexity</span>
-                      <span className="font-semibold text-foreground">{aiInsights.complexityScore}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${aiInsights.complexityScore}%` }} />
-                    </div>
+                {/* ── Performance Breakdown ── */}
+                <motion.section
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.5 }}
+                  className="artemis-panel rounded-[24px] p-6 md:p-7 flex flex-col"
+                >
+                  <header className="mb-5">
+                    <h3 className="text-[15px] font-semibold leading-none">Performance Breakdown</h3>
+                    <p className="mt-1 text-[11.5px] text-muted-foreground/70">
+                      Three signals derived from analyzed PRs.
+                    </p>
+                  </header>
+
+                  <div className="flex-1 flex flex-col gap-4">
+                    <BreakdownRow
+                      label="Avg PR complexity"
+                      sublabel="0 = trivial · 100 = heavy"
+                      value={aiInsights.complexityScore}
+                      unit="/100"
+                      color="hsl(232 88% 65%)"
+                    />
+                    <div className="h-px bg-border/35" />
+                    <BreakdownRow
+                      label="AI confidence"
+                      sublabel="how sure the model is"
+                      value={aiInsights.confidenceScore}
+                      unit="%"
+                      color="hsl(152 72% 50%)"
+                    />
+                    <div className="h-px bg-border/35" />
+                    <BreakdownRow
+                      label="Analyzed volume"
+                      sublabel={`${aiAnalyses.length} PR${aiAnalyses.length !== 1 ? 's' : ''} processed`}
+                      value={aiInsights.volumeScore}
+                      unit="/100"
+                      color="hsl(320 76% 70%)"
+                    />
                   </div>
-                </div>
-                <div className="w-full h-px bg-border/30" />
-                <div className="flex items-center gap-4">
-                  <ScoreRing value={aiInsights.confidenceScore} label="Confidence" color="#10b981" />
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground/70">AI Confidence</span>
-                      <span className="font-semibold text-foreground">{aiInsights.confidenceScore}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${aiInsights.confidenceScore}%` }} />
-                    </div>
-                  </div>
-                </div>
-                <div className="w-full h-px bg-border/30" />
-                <div className="flex items-center gap-4">
-                  <ScoreRing value={aiInsights.volumeScore} label="Volume" color="#a855f7" />
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground/70">PRs Analyzed</span>
-                      <span className="font-semibold text-foreground">{aiAnalyses.length}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
-                      <div className="h-full bg-violet-500 rounded-full" style={{ width: `${aiInsights.volumeScore}%` }} />
-                    </div>
-                  </div>
-                </div>
+                </motion.section>
               </div>
-            </motion.div>
-          </div>
+            );
+          })()}
 
           {/* ── Pull Request Activity ── */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.3 }}
-            className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-xl overflow-hidden"
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="artemis-panel rounded-[24px] overflow-hidden relative"
           >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+            />
             {/* Table header */}
             <div className="px-6 pt-4 pb-3 border-b border-border/40 space-y-3">
               {/* Title row */}
@@ -1118,3 +1140,147 @@ export default function DeveloperProfile() {
     </div>
   );
 }
+
+/* ─────────────── Local presentational helpers ─────────────── */
+
+interface ActionButtonProps {
+  icon: typeof Sparkles;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  variant: 'primary' | 'secondary' | 'ghost-destructive';
+  title?: string;
+}
+
+const ActionButton = ({
+  icon: Icon,
+  label,
+  onClick,
+  disabled,
+  loading,
+  variant,
+  title,
+}: ActionButtonProps) => {
+  const variantClass = {
+    primary:
+      'border-primary/30 bg-primary/10 text-primary hover:border-primary/50 hover:bg-primary/15',
+    secondary:
+      'border-secondary/25 bg-secondary/8 text-secondary hover:border-secondary/45 hover:bg-secondary/12',
+    'ghost-destructive':
+      'border-border/40 bg-card/30 text-muted-foreground/70 hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive',
+  }[variant];
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`group inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11.5px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 ${variantClass}`}
+    >
+      <Icon
+        className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''} ${
+          variant === 'primary' && !loading ? 'group-hover:rotate-12' : ''
+        } transition-transform`}
+      />
+      {label && <span>{label}</span>}
+    </button>
+  );
+};
+
+interface InsightListProps {
+  heading: string;
+  items: string[];
+  tone: 'success' | 'warning';
+  icon: typeof Zap;
+}
+
+const InsightList = ({ heading, items, tone, icon: Icon }: InsightListProps) => {
+  const accentClass = {
+    success: {
+      border: 'border-success/25',
+      bg: 'bg-success/[0.04]',
+      icon: 'text-success',
+      dot: 'bg-success',
+    },
+    warning: {
+      border: 'border-amber-500/25',
+      bg: 'bg-amber-500/[0.04]',
+      icon: 'text-amber-400',
+      dot: 'bg-amber-400',
+    },
+  }[tone];
+
+  return (
+    <div className={`rounded-xl border ${accentClass.border} ${accentClass.bg} p-4`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className={`h-3.5 w-3.5 ${accentClass.icon}`} />
+        <h4 className="text-[10.5px] font-mono font-semibold uppercase tracking-[0.16em] text-muted-foreground/85">
+          {heading}
+        </h4>
+      </div>
+      <ul className="space-y-2.5">
+        {items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2.5 text-[12.5px] leading-relaxed text-muted-foreground/95">
+            <span className={`mt-1.5 h-1 w-1 rounded-full ${accentClass.dot} shrink-0`} />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+interface TrendPillProps {
+  kind: 'improving' | 'declining' | 'stable' | 'narrative';
+  label: string;
+}
+
+const TrendPill = ({ kind, label }: TrendPillProps) => {
+  if (kind === 'narrative') {
+    return (
+      <span className="text-[12px] text-foreground/85 italic">{label}</span>
+    );
+  }
+  const cfg = {
+    improving: { icon: ArrowUpRight, cls: 'text-success border-success/30 bg-success/8' },
+    declining: { icon: ArrowDownRight, cls: 'text-destructive border-destructive/30 bg-destructive/8' },
+    stable: { icon: Minus, cls: 'text-muted-foreground border-border/40 bg-card/30' },
+  }[kind];
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${cfg.cls}`}>
+      <Icon className="h-3 w-3" />
+      {label}
+    </span>
+  );
+};
+
+interface BreakdownRowProps {
+  label: string;
+  sublabel: string;
+  value: number;
+  unit: string;
+  color: string;
+}
+
+const BreakdownRow = ({ label, sublabel, value, unit, color }: BreakdownRowProps) => (
+  <div className="flex items-center gap-4">
+    <DonutScore value={value} size={68} color={color} />
+    <div className="flex-1 min-w-0">
+      <p className="text-[13px] font-medium text-foreground leading-none">{label}</p>
+      <p className="mt-1 text-[11px] text-muted-foreground/65">{sublabel}</p>
+      <div className="mt-2.5 flex items-center gap-2">
+        <div className="h-1 flex-1 rounded-full bg-muted/40 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${value}%`, background: color }}
+          />
+        </div>
+        <span className="font-mono text-[10.5px] tabular-nums text-foreground/85">
+          {value}{unit}
+        </span>
+      </div>
+    </div>
+  </div>
+);
