@@ -836,11 +836,12 @@ export default function DeveloperProfile() {
                 : null;
 
             // ─── Build chart data from PrAnalysis array ───
-            // X axis is built from the createdAt **timestamp** (numeric).
-            // Using a numeric axis keeps every individual analysis as a
-            // distinct point even when several share the same calendar
-            // day — otherwise recharts collapses duplicates and only the
-            // first one in each bucket fires the tooltip.
+            // X axis uses the array index (categorical), so each analysis
+            // gets its own slot regardless of when the AI happened to
+            // process it. `createdAt` is *the analysis timestamp*, not
+            // the PR creation date — a single batch-analyze run produces
+            // dozens of analyses within seconds of each other and a
+            // time-scale axis squashes them all together.
             const sortedAnalyses = [...aiAnalyses].sort(
               (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
             );
@@ -848,11 +849,7 @@ export default function DeveloperProfile() {
               const hasPr = !!a.githubPullRequest;
               const created = new Date(a.createdAt);
               return {
-                // Spread analyses that share the same exact timestamp by
-                // adding the array index as a tiny fractional offset.
-                // Visually identical, but recharts now treats every point
-                // as unique.
-                ts: created.getTime() + index * 0.0001,
+                idx: index,
                 date: created.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                 fullDate: created.toLocaleDateString('en-US', {
                   month: 'short',
@@ -871,6 +868,14 @@ export default function DeveloperProfile() {
                 difficulty: a.difficultyLabel,
               };
             });
+
+            // Pick ~5 evenly-spaced indices for the X-axis labels.
+            const tickIndices = (() => {
+              const n = complexityTimeSeries.length;
+              if (n <= 5) return complexityTimeSeries.map((_, i) => i);
+              const step = (n - 1) / 4;
+              return [0, 1, 2, 3, 4].map((k) => Math.round(k * step));
+            })();
 
             // Work distribution by changeType — palette tuned so each slice
             // is clearly distinguishable side-by-side. Avoids the previous
@@ -1051,16 +1056,20 @@ export default function DeveloperProfile() {
                 {/* ── Charts row: complexity over time + work distribution ── */}
                 {hasInsights && complexityTimeSeries.length > 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
-                    {/* Complexity over time */}
+                    {/* Complexity over time — overflow-visible so the
+                        tooltip can render outside the panel; explicit
+                        z-index keeps it above the sibling 'Work
+                        distribution' card whose framer-motion transform
+                        creates its own stacking context. */}
                     <motion.section
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.15, duration: 0.5 }}
-                      className="artemis-panel relative overflow-hidden rounded-[24px] p-6"
+                      className="artemis-panel relative rounded-[24px] p-6 z-20"
                     >
                       <div
                         aria-hidden
-                        className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+                        className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent overflow-hidden"
                       />
                       <header className="flex items-center justify-between mb-4">
                         <div>
@@ -1074,10 +1083,13 @@ export default function DeveloperProfile() {
                         )}
                       </header>
 
-                      <ResponsiveContainer width="100%" height={220}>
+                      <ResponsiveContainer width="100%" height={260}>
                         <AreaChart
                           data={complexityTimeSeries}
-                          margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                          // Generous top margin so the tooltip card has
+                          // headroom when a point is near the top of the
+                          // chart — combined with allowEscapeViewBox below.
+                          margin={{ top: 16, right: 12, left: -12, bottom: 4 }}
                         >
                           <defs>
                             <linearGradient id="cplx-fill" x1="0" y1="0" x2="0" y2="1">
@@ -1098,21 +1110,14 @@ export default function DeveloperProfile() {
                             strokeDasharray="2 4"
                           />
                           <XAxis
-                            dataKey="ts"
+                            dataKey="idx"
                             type="number"
-                            scale="time"
-                            domain={['dataMin', 'dataMax']}
+                            domain={[0, Math.max(complexityTimeSeries.length - 1, 0)]}
                             tickLine={false}
                             axisLine={false}
-                            // Limit ticks to ~5 evenly-spaced calendar
-                            // days; we display ALL points but only label
-                            // a handful so the axis stays readable.
-                            tickCount={5}
+                            ticks={tickIndices}
                             tickFormatter={(value: number) =>
-                              new Date(value).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                              })
+                              complexityTimeSeries[value]?.date ?? ''
                             }
                             tick={{
                               fill: 'hsl(220 14% 55%)',
@@ -1134,13 +1139,18 @@ export default function DeveloperProfile() {
                           />
                           <RechartsTooltip
                             cursor={{ stroke: 'hsl(262 95% 75% / 0.4)', strokeWidth: 1 }}
-                            // Anchor the tooltip away from the cursor and let
-                            // recharts auto-flip near edges so it never gets
-                            // clipped (was rendering off-screen as an empty
-                            // 'PR' card before).
-                            offset={16}
-                            allowEscapeViewBox={{ x: false, y: true }}
-                            wrapperStyle={{ outline: 'none', zIndex: 30 }}
+                            offset={20}
+                            allowEscapeViewBox={{ x: true, y: true }}
+                            // wrapperStyle is applied to the tooltip's
+                            // outer div. A very high z-index here is
+                            // ignored because sibling motion.sections
+                            // create their own stacking contexts. We rely
+                            // on the parent panel's z-20 to outrank them.
+                            wrapperStyle={{
+                              outline: 'none',
+                              zIndex: 9999,
+                              pointerEvents: 'none',
+                            }}
                             content={({ active, payload }) => {
                               if (!active || !payload?.length) return null;
                               const p = payload[0].payload;
