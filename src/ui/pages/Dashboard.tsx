@@ -390,7 +390,9 @@ export default function Dashboard() {
       id: "prs" as const,
       title: "Pull Requests",
       value: githubStats?.pullRequests.total ?? 0,
-      helper: `${githubStats?.pullRequests.open ?? 0} open · ${githubStats?.pullRequests.merged ?? 0} merged`,
+      // `.merged` from the backend = merges in the LAST 7 DAYS. Be explicit
+      // about the time window so the card doesn't imply an all-time count.
+      helper: `${githubStats?.pullRequests.open ?? 0} open · ${githubStats?.pullRequests.merged ?? 0} merged this week`,
       series: prSeries,
       gradientVar: "primary",
       icon: GitPullRequest,
@@ -1150,31 +1152,14 @@ export default function Dashboard() {
             {selectedInsight === "commits" && (
               <div className="space-y-4">
                 <Card>
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-base">Weekly Activity</CardTitle>
+                    <span className="text-[11px] font-mono uppercase tracking-[0.16em] text-muted-foreground/60">
+                      {commitsByWeekday.reduce((s, i) => s + i.value, 0)} commits · 7d
+                    </span>
                   </CardHeader>
                   <CardContent>
-                    <div className="rounded-xl border border-border/40 bg-background/30 p-4">
-                      <div className="flex h-[190px] items-end gap-3">
-                        {commitsByWeekday.map((item) => {
-                          const heightPercent = Math.max((item.value / commitBarMax) * 100, item.value > 0 ? 14 : 4);
-                          return (
-                            <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
-                              <span className="text-xs text-muted-foreground">{item.value}</span>
-                              <div className="flex h-[130px] w-full items-end rounded-md border border-border/40 bg-card/30 p-1">
-                                <div
-                                  className="w-full rounded-[6px] bg-aurora-gradient opacity-90"
-                                  style={{ height: `${heightPercent}%` }}
-                                />
-                              </div>
-                              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                                {item.label}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <WeeklyActivityChart data={commitsByWeekday} max={commitBarMax} />
                   </CardContent>
                 </Card>
 
@@ -1511,6 +1496,123 @@ export default function Dashboard() {
           ) : null}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/* ─────────── Local viz: weekly activity bar chart ─────────── */
+
+interface WeeklyActivityChartProps {
+  data: Array<{ label: string; value: number }>;
+  max: number;
+}
+
+/**
+ * Weekly activity bar chart rendered as SVG. Replaces the previous div-based
+ * implementation that depended on the custom `bg-aurora-gradient` class
+ * (which was not painting reliably inside the modal). SVG with explicit
+ * gradients is bulletproof.
+ */
+function WeeklyActivityChart({ data, max }: WeeklyActivityChartProps) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0) {
+    return (
+      <div className="rounded-xl border border-border/40 bg-card/20 p-10 text-center">
+        <p className="text-sm text-muted-foreground/70">No commits in the last 7 days.</p>
+      </div>
+    );
+  }
+
+  // Geometry — viewBox is 700x220; padding leaves room for value labels and day axis
+  const VIEW_W = 700;
+  const VIEW_H = 220;
+  const PAD_X = 12;
+  const PAD_TOP = 22;
+  const PAD_BOTTOM = 26;
+  const usableW = VIEW_W - PAD_X * 2;
+  const usableH = VIEW_H - PAD_TOP - PAD_BOTTOM;
+
+  const slotWidth = usableW / data.length;
+  const barWidth = Math.min(slotWidth - 8, 64);
+
+  const safeMax = max > 0 ? max : 1;
+
+  return (
+    <div className="rounded-xl border border-border/40 bg-card/20 p-3">
+      <svg
+        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        className="w-full h-[220px]"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="weekly-bar" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="hsl(262 95% 72%)" stopOpacity="0.95" />
+            <stop offset="60%" stopColor="hsl(232 88% 65%)" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="hsl(232 78% 50%)" stopOpacity="0.55" />
+          </linearGradient>
+        </defs>
+
+        {/* Subtle baseline */}
+        <line
+          x1={PAD_X}
+          y1={PAD_TOP + usableH}
+          x2={VIEW_W - PAD_X}
+          y2={PAD_TOP + usableH}
+          stroke="hsl(220 14% 38%)"
+          strokeWidth="1"
+          opacity="0.25"
+        />
+
+        {data.map((item, idx) => {
+          const slotX = PAD_X + idx * slotWidth;
+          const cx = slotX + slotWidth / 2;
+          const heightRatio = item.value / safeMax;
+          const barH = Math.max(heightRatio * usableH, item.value > 0 ? 6 : 0);
+          const y = PAD_TOP + usableH - barH;
+          const x = cx - barWidth / 2;
+
+          return (
+            <g key={item.label}>
+              {/* Value above */}
+              <text
+                x={cx}
+                y={Math.max(y - 6, PAD_TOP + 12)}
+                textAnchor="middle"
+                fill="hsl(220 30% 75%)"
+                fontSize="11"
+                fontFamily="system-ui"
+              >
+                {item.value}
+              </text>
+
+              {/* Bar */}
+              {barH > 0 && (
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={barH}
+                  rx={6}
+                  fill="url(#weekly-bar)"
+                />
+              )}
+
+              {/* Day label below */}
+              <text
+                x={cx}
+                y={VIEW_H - 8}
+                textAnchor="middle"
+                fill="hsl(220 14% 55%)"
+                fontSize="10"
+                fontFamily="ui-monospace, monospace"
+                letterSpacing="2"
+              >
+                {item.label.toUpperCase()}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
