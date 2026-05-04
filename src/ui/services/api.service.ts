@@ -338,6 +338,23 @@ export const apiService = {
     return handleResponse(response);
   },
 
+  /**
+   * Returns the current GitHub integration status for the authenticated
+   * user, including `lastSyncedAt` (ISO string or null) used by the
+   * dashboard's "Synced N min ago" indicator.
+   */
+  async getGithubStatus(token: string): Promise<{
+    connected: boolean;
+    githubUsername?: string;
+    dataRange?: number;
+    lastSyncedAt?: string | null;
+  }> {
+    const response = await fetch(`${API_URL}/github/status`, {
+      headers: getAuthHeaders(token),
+    });
+    return handleResponse(response);
+  },
+
   async triggerGithubDataCollection(token: string): Promise<{
     success: boolean;
     message: string;
@@ -536,6 +553,15 @@ export const apiService = {
       method: 'POST',
       headers: getAuthHeaders(token),
       body: JSON.stringify({ name }),
+    });
+    return handleResponse(response);
+  },
+
+  async updateSquad(token: string, id: string, payload: { name?: string }): Promise<any> {
+    const response = await fetch(`${API_URL}/squads/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(payload),
     });
     return handleResponse(response);
   },

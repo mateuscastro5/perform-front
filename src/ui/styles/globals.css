@@ -1,66 +1,92 @@
 @import "./scrollbar.css";
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* =====================================================================
+   ARTEMIS — Design System
+   Inspired by lunar missions, deep space, and modern minimalism.
+   Aesthetic references: Comet, Perplexity, Vercel, NASA Artemis program.
+   All colors MUST be HSL.
+   ===================================================================== */
 
 @layer base {
   :root {
-    --background: 232 30% 8%;
-    --foreground: 220 35% 96%;
+    /* Deep space backdrop (almost-black with a violet undertone) */
+    --background: 232 32% 5%;
+    --foreground: 220 30% 96%;
 
-    --card: 232 28% 12%;
-    --card-foreground: 220 35% 96%;
+    /* Lunar surface for cards / panels */
+    --card: 232 30% 8%;
+    --card-foreground: 220 30% 96%;
 
-    --popover: 232 26% 13%;
-    --popover-foreground: 220 35% 96%;
+    --popover: 232 28% 9%;
+    --popover-foreground: 220 30% 96%;
 
-    --primary: 249 88% 71%;
-    --primary-foreground: 232 30% 10%;
+    /* Aurora violet — primary brand */
+    --primary: 262 88% 68%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 262 50% 63%;
-    --secondary-foreground: 232 30% 10%;
+    /* Iris — secondary brand (deep blue-violet, not bright cyan) */
+    --secondary: 232 78% 64%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 232 22% 18%;
-    --muted-foreground: 223 18% 70%;
+    /* Subtle neutral surface */
+    --muted: 232 22% 14%;
+    --muted-foreground: 222 14% 66%;
 
-    --accent: 216 96% 69%;
-    --accent-foreground: 232 30% 10%;
+    /* Soft rose — single accent (replaces gold) */
+    --accent: 320 76% 70%;
+    --accent-foreground: 232 38% 6%;
 
-    --destructive: 0 86% 68%;
-    --destructive-foreground: 220 35% 96%;
+    /* Mars red — destructive */
+    --destructive: 358 86% 64%;
+    --destructive-foreground: 220 30% 96%;
 
-    --success: 151 72% 48%;
-    --success-foreground: 232 30% 10%;
+    /* Aurora green — success */
+    --success: 152 72% 50%;
+    --success-foreground: 232 38% 6%;
 
-    --warning: 40 95% 61%;
-    --warning-foreground: 232 30% 10%;
+    /* Solar amber — warning */
+    --warning: 35 96% 60%;
+    --warning-foreground: 232 38% 6%;
 
-    --border: 232 22% 24%;
-    --input: 232 22% 20%;
-    --ring: 249 88% 71%;
+    --border: 232 22% 18%;
+    --input: 232 22% 14%;
+    --ring: 262 88% 68%;
 
-    --radius: 1.1rem;
+    --radius: 1.25rem;
 
-    --sidebar-background: 232 30% 8%;
-    --sidebar-foreground: 220 35% 96%;
-    --sidebar-primary: 249 88% 71%;
-    --sidebar-primary-foreground: 232 30% 10%;
-    --sidebar-accent: 232 26% 13%;
-    --sidebar-accent-foreground: 220 35% 96%;
-    --sidebar-border: 232 22% 24%;
-    --sidebar-ring: 249 88% 71%;
-    
-    --shadow-glow-green: 0 0 40px hsl(151 72% 48% / 0.22);
-    --shadow-glow-purple: 0 0 44px hsl(249 88% 71% / 0.24);
-    --shadow-card: 0 20px 55px -24px hsl(232 45% 2% / 0.75);
-    
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Sidebar — slightly deeper than card to create elevation */
+    --sidebar-background: 232 36% 4%;
+    --sidebar-foreground: 220 30% 96%;
+    --sidebar-primary: 262 88% 68%;
+    --sidebar-primary-foreground: 232 38% 6%;
+    --sidebar-accent: 232 30% 9%;
+    --sidebar-accent-foreground: 220 30% 96%;
+    --sidebar-border: 232 22% 16%;
+    --sidebar-ring: 262 88% 68%;
+
+    /* Brand gradients — three-stop violet → iris → rose. No yellow. */
+    --gradient-aurora: linear-gradient(135deg, hsl(262 88% 68%), hsl(232 78% 64%) 50%, hsl(320 76% 70%));
+    --gradient-nebula: radial-gradient(ellipse at 30% 20%, hsl(262 80% 28% / 0.55), transparent 55%),
+                       radial-gradient(ellipse at 80% 0%, hsl(232 70% 22% / 0.45), transparent 55%),
+                       radial-gradient(ellipse at 50% 100%, hsl(320 60% 22% / 0.35), transparent 60%);
+    --gradient-moon: radial-gradient(circle at 32% 28%, hsl(262 80% 86%), hsl(262 60% 60%) 35%, hsl(232 50% 22%) 80%);
+    --gradient-comet: linear-gradient(90deg, transparent, hsl(232 80% 80% / 0.9), hsl(262 90% 80% / 0.7), transparent);
+
+    /* Glows */
+    --glow-aurora: 0 0 80px hsl(262 88% 68% / 0.32), 0 0 32px hsl(262 88% 68% / 0.22);
+    --glow-comet: 0 0 60px hsl(232 78% 64% / 0.28);
+    --glow-lunar: 0 0 80px hsl(320 76% 70% / 0.18);
+    --shadow-orbit: 0 30px 80px -28px hsl(232 60% 2% / 0.85), 0 0 0 1px hsl(232 22% 18% / 0.6);
+    --shadow-card: 0 24px 60px -28px hsl(232 60% 2% / 0.8);
+
+    /* Motion */
+    --ease-orbit: cubic-bezier(0.22, 1, 0.36, 1);
+    --transition-smooth: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
@@ -69,18 +95,228 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    background-color: hsl(var(--background));
     background-image:
-      radial-gradient(circle at 16% 12%, hsl(var(--accent) / 0.14), transparent 35%),
-      radial-gradient(circle at 83% 8%, hsl(var(--primary) / 0.12), transparent 34%),
-      radial-gradient(circle at 42% 88%, hsl(var(--secondary) / 0.11), transparent 42%);
+      radial-gradient(ellipse 80% 60% at 12% -5%, hsl(262 80% 30% / 0.18), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 92% 0%, hsl(232 70% 28% / 0.16), transparent 60%),
+      radial-gradient(ellipse 90% 70% at 50% 110%, hsl(320 60% 22% / 0.18), transparent 65%);
     background-attachment: fixed;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6,
+  .font-display {
+    font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  .font-mono,
+  code, kbd, samp, pre {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.35);
+    color: hsl(var(--foreground));
   }
 }
 
+/* =====================================================================
+   Component utilities — Artemis primitives
+   ===================================================================== */
+
 @layer components {
+  /* Glass surfaces — translucent panels with blur, always paired with a hairline border. */
   .glass-surface {
     @apply bg-card/40 backdrop-blur-2xl border border-border/50 shadow-2xl;
+  }
+
+  .artemis-panel {
+    background: linear-gradient(180deg, hsl(var(--card) / 0.55), hsl(var(--card) / 0.28));
+    border: 1px solid hsl(var(--border) / 0.55);
+    backdrop-filter: blur(28px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    box-shadow: var(--shadow-orbit);
+    border-radius: var(--radius);
+  }
+
+  .artemis-panel-soft {
+    background: linear-gradient(180deg, hsl(var(--card) / 0.42), hsl(var(--card) / 0.18));
+    border: 1px solid hsl(var(--border) / 0.4);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border-radius: calc(var(--radius) - 0.25rem);
+  }
+
+  /* Aurora text — gradient lettering for hero / display copy */
+  .artemis-text-aurora {
+    background-image: var(--gradient-aurora);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .artemis-text-lunar {
+    background-image: linear-gradient(180deg, hsl(220 30% 99%), hsl(232 22% 70%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Aurora button — primary mission action */
+  .artemis-button-aurora {
+    position: relative;
+    background: var(--gradient-aurora);
+    color: hsl(var(--primary-foreground));
+    border-radius: 999px;
+    overflow: hidden;
+    isolation: isolate;
+    transition: var(--transition-smooth);
+  }
+
+  .artemis-button-aurora::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, hsl(0 0% 100% / 0.35), transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s var(--ease-orbit);
+    z-index: 0;
+  }
+
+  .artemis-button-aurora:hover::before {
+    transform: translateX(120%);
+  }
+
+  .artemis-button-aurora > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Hairline divider with aurora gradient */
+  .artemis-divider {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--border) / 0.4) 20%,
+      hsl(var(--primary) / 0.5) 50%,
+      hsl(var(--border) / 0.4) 80%,
+      transparent
+    );
+  }
+
+  /* Orbital ring decoration */
+  .artemis-orbit-ring {
+    position: absolute;
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--border) / 0.3);
+    pointer-events: none;
+  }
+
+  /* Ticker / data tag (uppercase, mono, hairline border) */
+  .artemis-tag {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/40 px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground backdrop-blur-md;
+  }
+
+  .artemis-tag-live {
+    @apply text-foreground;
+    border-color: hsl(var(--success) / 0.45);
+    background: hsl(var(--success) / 0.08);
+  }
+
+  /* Glow halos */
+  .artemis-glow-aurora {
+    box-shadow: var(--glow-aurora);
+  }
+
+  .artemis-glow-comet {
+    box-shadow: var(--glow-comet);
+  }
+}
+
+/* =====================================================================
+   Cosmic animations
+   ===================================================================== */
+
+@layer utilities {
+  @keyframes artemis-float {
+    0%, 100% { transform: translateY(0) }
+    50%      { transform: translateY(-8px) }
+  }
+
+  @keyframes artemis-drift {
+    0%   { transform: translate3d(-2%, 0, 0) }
+    50%  { transform: translate3d(2%, -1%, 0) }
+    100% { transform: translate3d(-2%, 0, 0) }
+  }
+
+  @keyframes artemis-twinkle {
+    0%, 100% { opacity: 0.25 }
+    50%      { opacity: 1 }
+  }
+
+  @keyframes artemis-orbit {
+    from { transform: rotate(0deg) }
+    to   { transform: rotate(360deg) }
+  }
+
+  @keyframes artemis-comet {
+    0%   { transform: translate3d(-30%, -10%, 0) rotate(18deg); opacity: 0 }
+    10%  { opacity: 1 }
+    70%  { opacity: 1 }
+    100% { transform: translate3d(140%, 60%, 0) rotate(18deg); opacity: 0 }
+  }
+
+  @keyframes artemis-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55) }
+    50%      { box-shadow: 0 0 0 18px hsl(var(--primary) / 0) }
+  }
+
+  @keyframes artemis-shine {
+    0%   { background-position: 200% 0 }
+    100% { background-position: -200% 0 }
+  }
+
+  @keyframes artemis-fade-up {
+    from { opacity: 0; transform: translateY(14px) }
+    to   { opacity: 1; transform: translateY(0) }
+  }
+
+  .animate-artemis-float    { animation: artemis-float 6s ease-in-out infinite; }
+  .animate-artemis-drift    { animation: artemis-drift 18s ease-in-out infinite; }
+  .animate-artemis-twinkle  { animation: artemis-twinkle 3.5s ease-in-out infinite; }
+  .animate-artemis-orbit    { animation: artemis-orbit 32s linear infinite; }
+  .animate-artemis-comet    { animation: artemis-comet 9s ease-in-out infinite; }
+  .animate-artemis-pulse    { animation: artemis-pulse 2.4s ease-out infinite; }
+  .animate-artemis-fade-up  { animation: artemis-fade-up 0.7s var(--ease-orbit) both; }
+
+  .artemis-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted) / 0.2),
+      hsl(var(--primary) / 0.18) 40%,
+      hsl(var(--secondary) / 0.18) 60%,
+      hsl(var(--muted) / 0.2)
+    );
+    background-size: 200% 100%;
+    animation: artemis-shine 4s linear infinite;
+  }
+
+  .bg-mission-gradient {
+    background: var(--gradient-nebula);
+  }
+
+  .text-balance {
+    text-wrap: balance;
   }
 }

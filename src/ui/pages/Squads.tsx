@@ -1,19 +1,72 @@
-import { useState, useEffect, type MouseEvent, type ChangeEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useMemo, type MouseEvent, type ChangeEvent, type KeyboardEvent } from "react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { DashboardHeader } from "@/ui/components/DashboardHeader";
 import { useDashboard } from "@/ui/contexts/DashboardContext";
 import { useAuth } from "@/ui/contexts/AuthContext";
 import { apiService } from "@/ui/services/api.service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/components/ui/avatar";
-import { Plus, Trash2, Users, Check, X, UserPlus, Search, Shield, ChevronRight, GitCommit, GitPullRequest, GitMerge, Eye } from "lucide-react";
+import { Plus, Trash2, Users, Check, X, UserPlus, Search, Shield, ChevronRight, GitCommit, GitPullRequest, GitMerge, Eye, Pencil, MoreHorizontal, GripVertical } from "lucide-react";
 import { Input } from "@/ui/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/ui/components/ui/dialog";
+import { Button } from "@/ui/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/ui/components/ui/dropdown-menu";
 
 interface Squad {
   id: string;
   name: string;
   members: string[];
+}
+
+/* ─────────── Custom squad ordering — persisted client-side ─────────── */
+const SQUAD_ORDER_KEY = "artemis.squadOrder.v1";
+
+function readSavedOrder(): string[] {
+  try {
+    const raw = localStorage.getItem(SQUAD_ORDER_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistSquadOrder(ids: string[]): void {
+  try {
+    localStorage.setItem(SQUAD_ORDER_KEY, JSON.stringify(ids));
+  } catch {
+    /* ignore — non-essential UX feature */
+  }
+}
+
+/** Reorder `list` to match the saved id-order; new ids retain API order at the end. */
+function applySavedOrder(list: Squad[]): Squad[] {
+  const order = readSavedOrder();
+  if (order.length === 0) return list;
+  const indexById = new Map<string, number>();
+  order.forEach((id, i) => indexById.set(id, i));
+  return [...list].sort((a, b) => {
+    const ai = indexById.has(a.id) ? indexById.get(a.id)! : Number.MAX_SAFE_INTEGER;
+    const bi = indexById.has(b.id) ? indexById.get(b.id)! : Number.MAX_SAFE_INTEGER;
+    if (ai !== bi) return ai - bi;
+    // Both unknown — preserve API order
+    return 0;
+  });
 }
 
 interface SquadApiDeveloper {
@@ -100,6 +153,17 @@ const Squads = () => {
   const [isAssigning, setIsAssigning] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ── Squad list controls (search + drag-to-reorder) ───────────────
+  const [squadSearch, setSquadSearch] = useState("");
+  const [isReordering, setIsReordering] = useState(false);
+
+  // ── Edit / delete state ──────────────────────────────────────────
+  const [editingSquadId, setEditingSquadId] = useState<string | null>(null);
+  const [editedName, setEditedName] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [squadPendingDelete, setSquadPendingDelete] = useState<Squad | null>(null);
+  const [isDeletingSquad, setIsDeletingSquad] = useState(false);
+
   useEffect(() => {
     const fetchSquads = async () => {
       if (!token) return;
@@ -110,13 +174,15 @@ const Squads = () => {
           name: s.name,
           members: s.developers ? s.developers.map((d: SquadApiDeveloper) => d.id) : [],
         }));
-        setSquads(formattedSquads);
-        if (formattedSquads.length > 0) {
+        // Apply user's saved order; new squads go to the end.
+        const ordered = applySavedOrder(formattedSquads);
+        setSquads(ordered);
+        if (ordered.length > 0) {
           setSelectedSquadId((currentId) => {
-            if (currentId && formattedSquads.some((squad: Squad) => squad.id === currentId)) {
+            if (currentId && ordered.some((squad: Squad) => squad.id === currentId)) {
               return currentId;
             }
-            return formattedSquads[0].id;
+            return ordered[0].id;
           });
         }
       } catch (error) {
@@ -127,6 +193,23 @@ const Squads = () => {
   }, [token]);
 
   const selectedSquad = squads.find((squad) => squad.id === selectedSquadId);
+
+  /**
+   * Filter squads by search text (case-insensitive name match).
+   * Drag-to-reorder is disabled while a search is active so we don't
+   * persist a partial-list reordering.
+   */
+  const visibleSquads = useMemo(() => {
+    const q = squadSearch.trim().toLowerCase();
+    if (!q) return squads;
+    return squads.filter((s) => s.name.toLowerCase().includes(q));
+  }, [squads, squadSearch]);
+  const canReorder = isReordering && !squadSearch.trim();
+
+  const handleReorder = (next: Squad[]) => {
+    setSquads(next);
+    persistSquadOrder(next.map((s) => s.id));
+  };
 
   const handleCreateSquad = async () => {
     if (newSquadName.trim() && token) {
@@ -143,16 +226,63 @@ const Squads = () => {
     }
   };
 
-  const handleDeleteSquad = async (id: string) => {
-    if (!token) return;
+  const handleConfirmDeleteSquad = async () => {
+    if (!token || !squadPendingDelete) return;
+    setIsDeletingSquad(true);
     try {
-      await apiService.deleteSquad(token, id);
-      setSquads(squads.filter((squad) => squad.id !== id));
-      if (selectedSquadId === id) setSelectedSquadId(null);
+      await apiService.deleteSquad(token, squadPendingDelete.id);
+      const remaining = squads.filter((s) => s.id !== squadPendingDelete.id);
+      setSquads(remaining);
+      if (selectedSquadId === squadPendingDelete.id) {
+        setSelectedSquadId(remaining.length > 0 ? remaining[0].id : null);
+      }
       setIsAssigning(false);
+      setSquadPendingDelete(null);
     } catch (error) {
       console.error("Failed to delete squad:", error);
+    } finally {
+      setIsDeletingSquad(false);
     }
+  };
+
+  const startEditSquad = (squad: Squad) => {
+    setEditingSquadId(squad.id);
+    setEditedName(squad.name);
+  };
+
+  const cancelEditSquad = () => {
+    setEditingSquadId(null);
+    setEditedName("");
+  };
+
+  const handleSaveEditSquad = async () => {
+    if (!token || !editingSquadId) return;
+    const trimmed = editedName.trim();
+    if (!trimmed) return;
+    const target = squads.find((s) => s.id === editingSquadId);
+    if (target && trimmed === target.name) {
+      cancelEditSquad();
+      return;
+    }
+    setIsSavingEdit(true);
+    try {
+      const updated = await apiService.updateSquad(token, editingSquadId, { name: trimmed });
+      setSquads((prev) =>
+        prev.map((s) =>
+          s.id === editingSquadId ? { ...s, name: updated?.name ?? trimmed } : s
+        )
+      );
+      cancelEditSquad();
+    } catch (error) {
+      console.error("Failed to update squad:", error);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSaveEditSquad();
+    if (e.key === "Escape") cancelEditSquad();
   };
 
   const handleToggleMember = async (devId: string) => {
@@ -214,25 +344,90 @@ const Squads = () => {
       <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
       <main
-        className="flex-1 flex overflow-hidden pr-6 md:pr-10 pt-[122px] pb-8 relative z-10 gap-4 transition-[padding-left] duration-300"
+        className="flex-1 flex overflow-hidden pr-6 md:pr-10 pt-[148px] pb-8 relative z-10 gap-4 transition-[padding-left] duration-300"
         style={{ paddingLeft: contentLeft + 16 }}
       >
         {/* ─── Sidebar ─── */}
         <div className="w-[264px] shrink-0 flex flex-col gap-3">
-          {/* Label + new squad button */}
+          {/* Label + new squad button + reorder toggle */}
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
               Squads
+              {squads.length > 0 && (
+                <span className="ml-1.5 text-muted-foreground/40 font-normal normal-case tracking-normal">
+                  · {squads.length}
+                </span>
+              )}
             </span>
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.93 }}
-              onClick={() => setIsCreatingSquad(true)}
-              className="h-6 w-6 rounded-md bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors"
-            >
-              <Plus className="h-3 w-3" />
-            </motion.button>
+            <div className="flex items-center gap-1">
+              {squads.length > 1 && (
+                <motion.button
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => setIsReordering((v) => !v)}
+                  title={isReordering ? "Done reordering" : "Reorder squads"}
+                  className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors ${
+                    isReordering
+                      ? "bg-secondary/15 text-secondary border border-secondary/30"
+                      : "bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {isReordering ? (
+                    <Check className="h-3 w-3" />
+                  ) : (
+                    <GripVertical className="h-3 w-3" />
+                  )}
+                </motion.button>
+              )}
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setIsCreatingSquad(true)}
+                title="New squad"
+                className="h-6 w-6 rounded-md bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+              </motion.button>
+            </div>
           </div>
+
+          {/* Search */}
+          {squads.length > 2 && (
+            <div className="relative px-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/45" />
+              <Input
+                type="search"
+                placeholder="Search squads…"
+                value={squadSearch}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setSquadSearch(e.target.value)}
+                disabled={isReordering}
+                className="h-8 pl-9 pr-7 text-[12.5px] rounded-lg bg-card/40 border-border/40 placeholder:text-muted-foreground/40"
+              />
+              {squadSearch && (
+                <button
+                  onClick={() => setSquadSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/55 hover:text-foreground transition-colors"
+                  title="Clear"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Reorder hint */}
+          {isReordering && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mx-1 flex items-center gap-2 rounded-lg border border-secondary/25 bg-secondary/5 px-2.5 py-1.5 text-[10.5px] text-secondary/95"
+            >
+              <GripVertical className="h-3 w-3 shrink-0" />
+              <span className="leading-tight">
+                Drag rows to reorder. Saved automatically.
+              </span>
+            </motion.div>
+          )}
 
           {/* Inline create input */}
           <AnimatePresence>
@@ -276,84 +471,177 @@ const Squads = () => {
 
           {/* List */}
           <div className="flex-1 overflow-y-auto space-y-0.5 scrollbar-thin scrollbar-thumb-border/40 scrollbar-track-transparent">
-            {squads.map((squad) => {
-              const isSelected = selectedSquadId === squad.id;
-              const previewDevs = squad.members
-                .slice(0, 4)
-                .map(getDevById)
-                .filter(Boolean) as DevPreview[];
+            {/* Renders one squad row. Used by both the static list and Reorder.Group. */}
+            {(() => {
+              const renderRow = (squad: Squad, dragHandle: React.ReactNode) => {
+                const isSelected = selectedSquadId === squad.id;
+                const previewDevs = squad.members
+                  .slice(0, 4)
+                  .map(getDevById)
+                  .filter(Boolean) as DevPreview[];
 
-              return (
-                <button
-                  key={squad.id}
-                  onClick={() => {
-                    setSelectedSquadId(squad.id);
-                    setIsAssigning(false);
-                  }}
-                  className={`relative w-full text-left px-3 py-2.5 rounded-xl transition-all group ${
-                    isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {isSelected && (
-                    <motion.div
-                      layoutId="squad-active-bg"
-                      className="absolute inset-0 rounded-xl bg-card/60 border border-border/50 backdrop-blur-xl shadow-sm"
-                      transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-                    />
-                  )}
+                return (
+                  <div
+                    className={`relative group rounded-xl transition-all ${
+                      isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {isSelected && !canReorder && (
+                      <motion.div
+                        layoutId="squad-active-bg"
+                        className="absolute inset-0 rounded-xl bg-card/60 border border-border/50 backdrop-blur-xl shadow-sm"
+                        transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                      />
+                    )}
+                    {/* When reordering, every row gets a static surface so dragging looks the same */}
+                    {canReorder && (
+                      <div className="absolute inset-0 rounded-xl bg-card/45 border border-border/40 backdrop-blur-xl" />
+                    )}
 
-                  <div className="relative z-10 flex items-center gap-2.5">
-                    {/* Icon */}
-                    <div
-                      className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected
-                          ? "bg-primary/15 text-primary"
-                          : "bg-muted/40 group-hover:bg-muted/70 text-muted-foreground/70"
-                      }`}
+                    <button
+                      onClick={() => {
+                        if (canReorder) return;
+                        setSelectedSquadId(squad.id);
+                        setIsAssigning(false);
+                      }}
+                      disabled={canReorder}
+                      className="relative z-10 w-full text-left px-3 py-2.5 flex items-center gap-2.5 disabled:cursor-grab"
                     >
-                      <Shield className="h-3.5 w-3.5" />
-                    </div>
+                      {/* Drag handle slot — only visible when reordering */}
+                      {dragHandle}
 
-                    {/* Name + count */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium truncate leading-none mb-0.5">
-                        {squad.name}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground/50">
-                        {squad.members.length} {squad.members.length === 1 ? "member" : "members"}
-                      </p>
-                    </div>
+                      {/* Icon */}
+                      <div
+                        className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                          isSelected
+                            ? "bg-primary/15 text-primary"
+                            : "bg-muted/40 group-hover:bg-muted/70 text-muted-foreground/70"
+                        }`}
+                      >
+                        <Shield className="h-3.5 w-3.5" />
+                      </div>
 
-                    {/* Stacked avatar preview */}
-                    {previewDevs.length > 0 && (
-                      <div className="flex items-center -space-x-1.5 shrink-0">
-                        {previewDevs.slice(0, 3).map((dev) => (
-                          <Avatar key={dev.id} className="h-4.5 w-4.5 ring-1 ring-background" style={{ height: 18, width: 18 }}>
-                            <AvatarImage
-                              src={
-                                dev.avatarUrl ||
-                                `https://ui-avatars.com/api/?name=${encodeURIComponent(dev.name)}&background=random&size=36`
-                              }
-                            />
-                            <AvatarFallback className="text-[8px]">{dev.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                        ))}
-                        {squad.members.length > 3 && (
-                          <div
-                            className="rounded-full bg-muted/80 ring-1 ring-background flex items-center justify-center"
-                            style={{ height: 18, width: 18 }}
-                          >
-                            <span className="text-[7px] font-semibold text-muted-foreground">
-                              +{squad.members.length - 3}
-                            </span>
-                          </div>
-                        )}
+                      {/* Name + count */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium truncate leading-none mb-0.5">
+                          {squad.name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground/50">
+                          {squad.members.length} {squad.members.length === 1 ? "member" : "members"}
+                        </p>
+                      </div>
+
+                      {/* Stacked avatar preview */}
+                      {previewDevs.length > 0 && !canReorder && (
+                        <div className="flex items-center -space-x-1.5 shrink-0 group-hover:opacity-0 transition-opacity">
+                          {previewDevs.slice(0, 3).map((dev) => (
+                            <Avatar key={dev.id} className="h-4.5 w-4.5 ring-1 ring-background" style={{ height: 18, width: 18 }}>
+                              <AvatarImage
+                                src={
+                                  dev.avatarUrl ||
+                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(dev.name)}&background=random&size=36`
+                                }
+                              />
+                              <AvatarFallback className="text-[8px]">{dev.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                          ))}
+                          {squad.members.length > 3 && (
+                            <div
+                              className="rounded-full bg-muted/80 ring-1 ring-background flex items-center justify-center"
+                              style={{ height: 18, width: 18 }}
+                            >
+                              <span className="text-[7px] font-semibold text-muted-foreground">
+                                +{squad.members.length - 3}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Hover actions — edit/delete (hidden during reorder) */}
+                    {!canReorder && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={(e: MouseEvent<HTMLButtonElement>) => e.stopPropagation()}
+                              className="h-7 w-7 rounded-lg bg-card/80 border border-border/40 text-muted-foreground hover:text-foreground hover:bg-card flex items-center justify-center backdrop-blur-md transition-colors"
+                              aria-label="Squad actions"
+                            >
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => startEditSquad(squad)}
+                            >
+                              <Pencil className="mr-2 h-3.5 w-3.5" />
+                              <span>Rename</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-destructive focus:text-destructive"
+                              onClick={() => setSquadPendingDelete(squad)}
+                            >
+                              <Trash2 className="mr-2 h-3.5 w-3.5" />
+                              <span>Delete</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     )}
                   </div>
-                </button>
+                );
+              };
+
+              if (canReorder) {
+                return (
+                  <Reorder.Group
+                    axis="y"
+                    values={squads}
+                    onReorder={handleReorder}
+                    className="space-y-0.5"
+                  >
+                    {squads.map((squad) => (
+                      <Reorder.Item
+                        key={squad.id}
+                        value={squad}
+                        whileDrag={{
+                          scale: 1.02,
+                          boxShadow: "0 14px 30px -10px hsl(232 60% 2% / 0.6)",
+                          zIndex: 30,
+                        }}
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        {renderRow(
+                          squad,
+                          <span className="relative z-10 text-muted-foreground/55 shrink-0 -ml-0.5">
+                            <GripVertical className="h-3.5 w-3.5" />
+                          </span>,
+                        )}
+                      </Reorder.Item>
+                    ))}
+                  </Reorder.Group>
+                );
+              }
+
+              return (
+                <>
+                  {visibleSquads.map((squad) => (
+                    <div key={squad.id}>{renderRow(squad, null)}</div>
+                  ))}
+                  {squadSearch.trim() && visibleSquads.length === 0 && (
+                    <div className="py-8 px-3 text-center">
+                      <p className="text-xs text-muted-foreground/55">
+                        No squads match "{squadSearch}".
+                      </p>
+                    </div>
+                  )}
+                </>
               );
-            })}
+            })()}
 
             {squads.length === 0 && !isCreatingSquad && (
               <motion.div
@@ -428,10 +716,38 @@ const Squads = () => {
                         </span>
                       </div>
 
-                      {/* Name */}
-                      <h1 className="text-[28px] font-semibold tracking-tight text-foreground leading-none">
-                        {selectedSquad.name}
-                      </h1>
+                      {/* Name (inline editable) */}
+                      {editingSquadId === selectedSquad.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            autoFocus
+                            value={editedName}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setEditedName(e.target.value)}
+                            onKeyDown={handleEditKeyDown}
+                            onBlur={handleSaveEditSquad}
+                            disabled={isSavingEdit}
+                            className="text-[28px] font-semibold tracking-tight text-foreground leading-none bg-transparent border-b border-primary/40 focus:border-primary outline-none px-1 -ml-1 max-w-[420px] disabled:opacity-60"
+                          />
+                          <button
+                            onClick={cancelEditSquad}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startEditSquad(selectedSquad)}
+                          className="group/title flex items-center gap-2 text-left"
+                          title="Click to rename"
+                        >
+                          <h1 className="text-[28px] font-semibold tracking-tight text-foreground leading-none">
+                            {selectedSquad.name}
+                          </h1>
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground/40 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                        </button>
+                      )}
 
                       {/* Member stack + count */}
                       <div className="flex items-center gap-3 mt-3.5">
@@ -518,7 +834,16 @@ const Squads = () => {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDeleteSquad(selectedSquad.id)}
+                        onClick={() => startEditSquad(selectedSquad)}
+                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-lg transition-colors border border-transparent hover:border-border/60"
+                        title="Rename Squad"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setSquadPendingDelete(selectedSquad)}
                         className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors border border-transparent hover:border-destructive/20"
                         title="Delete Squad"
                       >
@@ -745,6 +1070,49 @@ const Squads = () => {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* ── Delete confirmation dialog ─────────────────────────────── */}
+      <Dialog
+        open={!!squadPendingDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingSquad) setSquadPendingDelete(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Delete squad?</DialogTitle>
+            <DialogDescription>
+              {squadPendingDelete && (
+                <>
+                  This will permanently delete{" "}
+                  <span className="font-semibold text-foreground">{squadPendingDelete.name}</span>.{" "}
+                  {squadPendingDelete.members.length > 0
+                    ? `Its ${squadPendingDelete.members.length} ${
+                        squadPendingDelete.members.length === 1 ? "member" : "members"
+                      } will be unassigned, but no developer profiles are deleted.`
+                    : "This action cannot be undone."}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setSquadPendingDelete(null)}
+              disabled={isDeletingSquad}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteSquad}
+              disabled={isDeletingSquad}
+            >
+              {isDeletingSquad ? "Deleting…" : "Delete squad"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
