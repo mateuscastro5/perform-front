@@ -541,14 +541,25 @@ export default function DeveloperProfile() {
   const realCommits = developer.stats.commits;
   const realReviews = developer.stats.reviews;
 
-  // Status counts for filter pills
-  const statusCounts = devPRs.reduce<Record<string, number>>((acc, pr) => {
+  // ── Bound the PR list to the same 30-day window the StatCards use,
+  //    so the counts above and the rows below come from one mental model.
+  const periodWindowDays = developer.stats.period.days;
+  const periodCutoff = new Date();
+  periodCutoff.setDate(periodCutoff.getDate() - periodWindowDays);
+
+  const devPRsInWindow = devPRs.filter((pr) => {
+    const ref = new Date(pr.updatedAt || pr.createdAt);
+    return !Number.isNaN(ref.getTime()) && ref.getTime() >= periodCutoff.getTime();
+  });
+
+  // Status counts for filter pills (window-aligned)
+  const statusCounts = devPRsInWindow.reduce<Record<string, number>>((acc, pr) => {
     acc[pr.status] = (acc[pr.status] ?? 0) + 1;
     return acc;
   }, {});
 
-  // Filtered PR list
-  const filteredPRs = devPRs.filter((pr) => {
+  // Filtered PR list (window-aligned)
+  const filteredPRs = devPRsInWindow.filter((pr) => {
     const matchesSearch = !prSearch || pr.title.toLowerCase().includes(prSearch.toLowerCase());
     const matchesStatus = prStatusFilter === 'all' || pr.status === prStatusFilter;
     return matchesSearch && matchesStatus;
@@ -681,12 +692,22 @@ export default function DeveloperProfile() {
                 </div>
               </div>
 
-              {/* Stats strip */}
-              <div className="flex gap-3">
-                <StatCard icon={<GitCommit className="h-3.5 w-3.5" />} label="Commits" value={realCommits} delay={0.05} />
-                <StatCard icon={<GitPullRequest className="h-3.5 w-3.5" />} label="Pull Requests" value={realPRCount} delay={0.1} />
-                <StatCard icon={<Eye className="h-3.5 w-3.5" />} label="Reviews" value={realReviews} delay={0.15} />
-                <StatCard icon={<GitMerge className="h-3.5 w-3.5" />} label="Merged PRs" value={realMerged} delay={0.2} />
+              {/* Stats strip — values are bound to the same N-day window
+                  used by the Engineering Overview table on the dashboard,
+                  so cross-page numbers always agree. */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
+                    Last {periodWindowDays} days
+                  </span>
+                  <span className="h-px flex-1 bg-border/40" />
+                </div>
+                <div className="flex gap-3">
+                  <StatCard icon={<GitCommit className="h-3.5 w-3.5" />} label="Commits" value={realCommits} delay={0.05} />
+                  <StatCard icon={<GitPullRequest className="h-3.5 w-3.5" />} label="Pull Requests" value={realPRCount} delay={0.1} />
+                  <StatCard icon={<Eye className="h-3.5 w-3.5" />} label="Reviews" value={realReviews} delay={0.15} />
+                  <StatCard icon={<GitMerge className="h-3.5 w-3.5" />} label="Merged PRs" value={realMerged} delay={0.2} />
+                </div>
               </div>
             </div>
           </motion.div>
@@ -925,14 +946,18 @@ export default function DeveloperProfile() {
                 <div className="flex items-center gap-2.5">
                   <GitPullRequest className="h-4 w-4 text-muted-foreground" />
                   <h3 className="text-sm font-semibold text-foreground">Pull Request Activity</h3>
-                  {devPRs.length > 0 && (
+                  {devPRsInWindow.length > 0 && (
                     <span className="text-xs text-muted-foreground/60 bg-muted/40 px-2 py-0.5 rounded-full border border-border/30">
-                      {filteredPRs.length}{filteredPRs.length !== devPRs.length && `/${devPRs.length}`}
+                      {filteredPRs.length}
+                      {filteredPRs.length !== devPRsInWindow.length && `/${devPRsInWindow.length}`}
                     </span>
                   )}
+                  <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground/50">
+                    last {periodWindowDays}d
+                  </span>
                 </div>
                 {/* Search */}
-                {devPRs.length > 0 && (
+                {devPRsInWindow.length > 0 && (
                   <div className="relative w-52">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
                     <Input
@@ -946,11 +971,11 @@ export default function DeveloperProfile() {
               </div>
 
               {/* Status filter pills */}
-              {devPRs.length > 0 && (
+              {devPRsInWindow.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <SlidersHorizontal className="h-3 w-3 text-muted-foreground/40 mr-0.5" />
                   {(['all', 'merged', 'review_requested', 'approved', 'changes_requested', 'draft'] as const).map((status) => {
-                    const count = status === 'all' ? devPRs.length : (statusCounts[status] ?? 0);
+                    const count = status === 'all' ? devPRsInWindow.length : (statusCounts[status] ?? 0);
                     if (status !== 'all' && count === 0) return null;
                     const cfg = status === 'all' ? null : PR_STATUS_CONFIG[status];
                     const isActive = prStatusFilter === status;
@@ -974,7 +999,7 @@ export default function DeveloperProfile() {
               )}
             </div>
 
-            {devPRs.length === 0 ? (
+            {devPRsInWindow.length === 0 ? (
               <div className="py-16 flex flex-col items-center justify-center text-center">
                 <div className="h-12 w-12 rounded-2xl bg-muted/20 border border-border/30 flex items-center justify-center mb-4">
                   <GitPullRequest className="h-6 w-6 text-muted-foreground/30" />
