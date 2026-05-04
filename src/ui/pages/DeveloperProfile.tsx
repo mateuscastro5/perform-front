@@ -836,17 +836,31 @@ export default function DeveloperProfile() {
                 : null;
 
             // ─── Build chart data from PrAnalysis array ───
+            // X axis is built from the createdAt **timestamp** (numeric).
+            // Using a numeric axis keeps every individual analysis as a
+            // distinct point even when several share the same calendar
+            // day — otherwise recharts collapses duplicates and only the
+            // first one in each bucket fires the tooltip.
             const sortedAnalyses = [...aiAnalyses].sort(
               (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
             );
-            const complexityTimeSeries = sortedAnalyses.map((a) => {
+            const complexityTimeSeries = sortedAnalyses.map((a, index) => {
               const hasPr = !!a.githubPullRequest;
+              const created = new Date(a.createdAt);
               return {
-                date: new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                fullDate: new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                // Spread analyses that share the same exact timestamp by
+                // adding the array index as a tiny fractional offset.
+                // Visually identical, but recharts now treats every point
+                // as unique.
+                ts: created.getTime() + index * 0.0001,
+                date: created.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                fullDate: created.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                }),
                 complexity: a.complexityScore,
                 confidence: Math.round(a.confidence * 100),
-                // Use PR data when available, else the AI's technical summary as headline
                 title: hasPr
                   ? a.githubPullRequest!.title
                   : (a.technicalSummary?.slice(0, 80) || 'Commit-level analysis'),
@@ -1084,10 +1098,22 @@ export default function DeveloperProfile() {
                             strokeDasharray="2 4"
                           />
                           <XAxis
-                            dataKey="date"
+                            dataKey="ts"
+                            type="number"
+                            scale="time"
+                            domain={['dataMin', 'dataMax']}
                             tickLine={false}
                             axisLine={false}
-                            interval="preserveStartEnd"
+                            // Limit ticks to ~5 evenly-spaced calendar
+                            // days; we display ALL points but only label
+                            // a handful so the axis stays readable.
+                            tickCount={5}
+                            tickFormatter={(value: number) =>
+                              new Date(value).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            }
                             tick={{
                               fill: 'hsl(220 14% 55%)',
                               fontSize: 10,
