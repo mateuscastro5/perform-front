@@ -2,12 +2,45 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/artemis-mark.svg" />
+    <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Perform</title>
+    <meta name="theme-color" content="#0a0a14" />
+    <meta name="description" content="Artemis · Mission Control for engineering — track your fleet at lunar precision." />
+    <title>Artemis · Mission Control</title>
+    <style>
+      html, body { background-color: #08080f; }
+      #artemis-boot {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        background:
+          radial-gradient(ellipse 80% 60% at 12% -5%, rgba(122, 89, 255, 0.22), transparent 60%),
+          radial-gradient(ellipse 70% 50% at 92% 0%, rgba(70, 200, 255, 0.18), transparent 60%),
+          #08080f;
+        transition: opacity 0.6s ease;
+      }
+      #artemis-boot.is-hidden { opacity: 0; pointer-events: none; }
+      #artemis-boot .ring {
+        width: 80px; height: 80px; border-radius: 9999px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-top-color: rgba(150, 120, 255, 0.95);
+        animation: artemis-spin 1.4s linear infinite;
+      }
+      @keyframes artemis-spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
+    <div id="artemis-boot"><div class="ring"></div></div>
     <div id="root"></div>
+    <script>
+      window.addEventListener("load", () => {
+        const boot = document.getElementById("artemis-boot");
+        if (boot) {
+          setTimeout(() => boot.classList.add("is-hidden"), 280);
+          setTimeout(() => boot.remove(), 1100);
+        }
+      });
+    </script>
     <script type="module" src="/src/ui/main.tsx"></script>
   </body>
 </html>

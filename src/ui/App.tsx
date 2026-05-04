@@ -9,7 +9,11 @@ import DeveloperProfile from './pages/DeveloperProfile';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ComplexityDashboard from './pages/ComplexityDashboard';
+import SquadXRayView from './pages/SquadXRayView';
+import HowWeDoIt from './pages/HowWeDoIt';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { CommandPaletteProvider } from './components/CommandPalette';
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
@@ -67,6 +71,30 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/complexity"
+        element={
+          <ProtectedRoute>
+            <ComplexityDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/how-we-do-it"
+        element={
+          <ProtectedRoute>
+            <HowWeDoIt />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/squad/:id/xray"
+        element={
+          <ProtectedRoute>
+            <SquadXRayView />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
@@ -76,8 +104,10 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <DashboardProvider>
-          <AppRoutes />
-          <ProgressToastContainer />
+          <CommandPaletteProvider>
+            <AppRoutes />
+            <ProgressToastContainer />
+          </CommandPaletteProvider>
         </DashboardProvider>
       </AuthProvider>
     </BrowserRouter>

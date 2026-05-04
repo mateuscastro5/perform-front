@@ -14,6 +14,7 @@ const NavigationMenu = ({
     { id: 'home', label: 'Home', active: true },
     { id: 'squads', label: 'Squads', active: false },
     { id: 'developers', label: 'Developers', active: false },
+    { id: 'complexity', label: 'Complexity', active: false },
     { id: 'projects', label: 'Projects', active: false },
   ];
 

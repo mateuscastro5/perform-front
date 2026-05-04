@@ -9,13 +9,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow;
 
 app.on("ready", () => {
-    const iconPath = path.join(process.cwd(), 'src/ui/assets/AlphaLogo.png');
-    
+    const iconPath = path.join(process.cwd(), 'src/ui/assets/ArtemisSymbol.png');
+
     mainWindow = new BrowserWindow({
         width: 1368,
         height: 800,
         frame: false,
-        title: 'alphaSights Insights',
+        title: 'Artemis',
         icon: iconPath,
         titleBarStyle: 'hidden',
         webPreferences: {
@@ -51,6 +51,7 @@ app.on("ready", () => {
         mainWindow.loadURL('http://localhost:5123');
         mainWindow.webContents.openDevTools();
     } else {
-        mainWindow.loadFile(path.join(__dirname, '../dist-react/index.html'));
+        const htmlPath = path.join(app.getAppPath(), 'dist-react', 'index.html');
+        mainWindow.loadFile(htmlPath);
     }
 });
