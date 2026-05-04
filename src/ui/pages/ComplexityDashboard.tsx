@@ -146,6 +146,12 @@ export default function ComplexityDashboard() {
                       {doubtful.length} need review
                     </span>
                   )}
+                  {!loading && doubtful.length === 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 text-[11px] font-medium text-success">
+                      <CheckCircle2 className="h-3 w-3" />
+                      All clear
+                    </span>
+                  )}
                 </div>
 
                 <h2 className="font-display text-[clamp(1.8rem,3.4vw,2.6rem)] font-light leading-[1.05] tracking-[-0.02em]">
@@ -162,122 +168,191 @@ export default function ComplexityDashboard() {
                 </p>
               </div>
 
-              {/* Right: KPI tiles */}
-              <div className="grid grid-cols-3 gap-2.5">
-                <KpiTile
-                  icon={Layers}
-                  label="Pending"
-                  value={loading ? "—" : String(doubtful.length)}
-                  hint="awaiting review"
-                  tone={doubtful.length > 0 ? "warning" : "neutral"}
-                />
-                <KpiTile
-                  icon={Gauge}
-                  label="Avg conf"
-                  value={loading ? "—" : avgConfidence != null ? `${avgConfidence}%` : "—"}
-                  hint="across queue"
-                  tone="neutral"
-                />
-                <KpiTile
-                  icon={Activity}
-                  label="Pipeline"
-                  value="Active"
-                  hint="cron · hourly"
-                  tone="success"
-                />
-              </div>
+              {/* Right: KPI tiles — only when there's something to show */}
+              {!loading && doubtful.length > 0 && (
+                <div className="grid grid-cols-3 gap-2.5">
+                  <KpiTile
+                    icon={Layers}
+                    label="Pending"
+                    value={String(doubtful.length)}
+                    hint="awaiting review"
+                    tone="warning"
+                  />
+                  <KpiTile
+                    icon={Gauge}
+                    label="Avg conf"
+                    value={avgConfidence != null ? `${avgConfidence}%` : "—"}
+                    hint="across queue"
+                    tone="neutral"
+                  />
+                  <KpiTile
+                    icon={Activity}
+                    label="Pipeline"
+                    value="Active"
+                    hint="cron · hourly"
+                    tone="success"
+                  />
+                </div>
+              )}
             </div>
           </motion.section>
 
-          {/* ── How it works strip ── */}
-          <motion.section
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-3"
-          >
-            <Step
-              n="01"
-              icon={Brain}
-              title="Score"
-              body="LLM reads the diff + PR description, emits scope, risk, effort and a confidence."
-            />
-            <Step
-              n="02"
-              icon={AlertTriangle}
-              title="Triage"
-              body="Anything below 60% confidence lands in this queue. High-confidence analyses go straight to dashboards."
-            />
-            <Step
-              n="03"
-              icon={CheckCircle2}
-              title="Learn"
-              body="Your corrections feed back into the system prompt of the next batch."
-            />
-          </motion.section>
+          {/* ── Loading state ── */}
+          {loading && (
+            <motion.section
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="artemis-panel rounded-[24px] p-12 text-center"
+            >
+              <div className="flex items-center justify-center gap-3 text-muted-foreground/70">
+                <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-sm">Loading complexity data…</span>
+              </div>
+            </motion.section>
+          )}
 
-          {/* ── Queue ── */}
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="artemis-panel rounded-[24px] p-7 md:p-8"
-          >
-            <header className="flex items-center justify-between mb-5">
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-primary/12 border border-primary/30 flex items-center justify-center text-primary">
-                    <TrendingUp className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-semibold leading-none">
-                      Review queue
-                    </h3>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      Confirm, correct, or skip — your call retrains the model.
-                    </p>
-                  </div>
-                </div>
+          {/* ── Empty state — celebratory ── */}
+          {!loading && doubtful.length === 0 && (
+            <motion.section
+              key="empty"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              className="artemis-panel relative overflow-hidden rounded-[24px] p-10 md:p-14"
+            >
+              {/* Aurora bloom centerpiece */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 flex items-center justify-center"
+              >
+                <div
+                  className="h-[420px] w-[420px] rounded-full opacity-40 blur-3xl"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 50% 50%, hsl(152 72% 50% / 0.20) 0%, hsl(262 80% 65% / 0.10) 45%, transparent 70%)",
+                  }}
+                />
               </div>
-              {!loading && lowestConfidence != null && (
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/55">
-                    Lowest conf
-                  </p>
-                  <p className="mt-0.5 font-display text-[18px] font-light tabular-nums text-amber-400">
-                    {lowestConfidence}%
-                  </p>
-                </div>
-              )}
-            </header>
 
-            {loading ? (
-              <div className="flex items-center justify-center h-40">
-                <div className="flex items-center gap-3 text-muted-foreground/70">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-sm">Loading complexity data…</span>
+              <div className="relative max-w-md mx-auto text-center">
+                {/* Animated check icon */}
+                <motion.div
+                  initial={{ scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{
+                    delay: 0.15,
+                    type: "spring",
+                    stiffness: 220,
+                    damping: 16,
+                  }}
+                  className="relative mx-auto h-16 w-16 mb-5"
+                >
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background:
+                        "radial-gradient(circle, hsl(152 72% 50% / 0.45) 0%, transparent 70%)",
+                      filter: "blur(14px)",
+                    }}
+                  />
+                  <div className="relative h-16 w-16 rounded-2xl bg-success/15 border border-success/35 flex items-center justify-center shadow-[0_0_30px_-4px_hsl(152_72%_50%/0.5)]">
+                    <Sparkles className="h-7 w-7 text-success" />
+                  </div>
+                </motion.div>
+
+                <h3 className="font-display text-[28px] font-light leading-tight tracking-[-0.02em]">
+                  <span className="artemis-text-lunar">Every little thing is </span>
+                  <span className="artemis-text-aurora">gonna be alright.</span>
+                </h3>
+                <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground max-w-sm mx-auto">
+                  Our AI got all done — no analyses are pending review. The
+                  pipeline will route new low-confidence items here as they
+                  come in.
+                </p>
+
+                {/* Tiny pipeline status row */}
+                <div className="mt-7 inline-flex items-center gap-2.5 rounded-full border border-border/40 bg-card/40 px-3 py-1.5 text-[11px] font-medium">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
+                  </span>
+                  <span className="uppercase tracking-[0.14em] text-muted-foreground/85">
+                    Pipeline active · cron hourly
+                  </span>
                 </div>
               </div>
-            ) : doubtful.length === 0 ? (
-              <div className="py-14 text-center max-w-md mx-auto">
-                <div className="h-14 w-14 rounded-2xl bg-success/15 border border-success/30 flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="h-6 w-6 text-success" />
-                </div>
-                <p className="text-[15px] font-medium text-foreground">
-                  Inbox zero
-                </p>
-                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-                  No analyses pending review right now. The pipeline will route
-                  new low-confidence items here as they come in.
-                </p>
-              </div>
-            ) : (
-              <DoubtfulAnalysisQueue
-                analyses={doubtful}
-                onSubmitFeedback={handleFeedback}
-              />
-            )}
-          </motion.section>
+            </motion.section>
+          )}
+
+          {/* ── How it works + Queue (only when there are pending items) ── */}
+          {!loading && doubtful.length > 0 && (
+            <>
+              <motion.section
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.05 }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-3"
+              >
+                <Step
+                  n="01"
+                  icon={Brain}
+                  title="Score"
+                  body="LLM reads the diff + PR description, emits scope, risk, effort and a confidence."
+                />
+                <Step
+                  n="02"
+                  icon={AlertTriangle}
+                  title="Triage"
+                  body="Anything below 60% confidence lands in this queue. High-confidence analyses go straight to dashboards."
+                />
+                <Step
+                  n="03"
+                  icon={CheckCircle2}
+                  title="Learn"
+                  body="Your corrections feed back into the system prompt of the next batch."
+                />
+              </motion.section>
+
+              <motion.section
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="artemis-panel rounded-[24px] p-7 md:p-8"
+              >
+                <header className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-9 w-9 rounded-xl bg-primary/12 border border-primary/30 flex items-center justify-center text-primary">
+                      <TrendingUp className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-[15px] font-semibold leading-none">
+                        Review queue
+                      </h3>
+                      <p className="text-xs text-muted-foreground/70 mt-1">
+                        Confirm, correct, or skip — your call retrains the model.
+                      </p>
+                    </div>
+                  </div>
+                  {lowestConfidence != null && (
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/55">
+                        Lowest conf
+                      </p>
+                      <p className="mt-0.5 font-display text-[18px] font-light tabular-nums text-amber-400">
+                        {lowestConfidence}%
+                      </p>
+                    </div>
+                  )}
+                </header>
+
+                <DoubtfulAnalysisQueue
+                  analyses={doubtful}
+                  onSubmitFeedback={handleFeedback}
+                />
+              </motion.section>
+            </>
+          )}
         </div>
       </main>
     </div>

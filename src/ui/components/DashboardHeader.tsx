@@ -18,7 +18,6 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
-import { Input } from "@/ui/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/components/ui/avatar";
 import {
   DropdownMenu,
@@ -37,6 +36,7 @@ import {
 } from "@/ui/stores/uiStore";
 import { ArtemisLogo } from "@/ui/components/cosmic";
 import { NotificationCenter } from "@/ui/components/NotificationCenter";
+import { useCommandPalette } from "@/ui/components/CommandPalette";
 
 export interface BreadcrumbItem {
   label: string;
@@ -91,6 +91,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { setOpen: openCommandPalette } = useCommandPalette();
 
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W;
   const headerLeft = SIDEBAR_LEFT + sidebarWidth + SIDEBAR_GAP;
@@ -183,7 +184,7 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
                   {displayName.split(" ")[0] ?? "there"}
                 </p>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })}
+                  {new Date().toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "short" })}
                 </p>
               </div>
             </motion.div>
@@ -342,13 +343,18 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
 
           {/* Right: search + bell + user */}
           <div className="flex items-center gap-3" style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
-            <div className="relative w-[260px]">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search..." className="h-10 rounded-xl pl-10" />
-              <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border/50 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline">
+            <button
+              type="button"
+              onClick={() => openCommandPalette(true)}
+              className="group relative flex h-10 w-[260px] items-center rounded-xl border border-border/45 bg-card/30 px-3.5 text-left text-sm text-muted-foreground/65 transition-all hover:border-border/70 hover:bg-card/50 hover:text-muted-foreground"
+              aria-label="Search (Ctrl+K)"
+            >
+              <Search className="mr-2.5 h-4 w-4 shrink-0 text-muted-foreground/55 group-hover:text-muted-foreground transition-colors" />
+              <span className="flex-1 truncate">Search…</span>
+              <kbd className="ml-2 hidden rounded border border-border/50 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline">
                 ⌘K
               </kbd>
-            </div>
+            </button>
 
             <NotificationCenter />
 

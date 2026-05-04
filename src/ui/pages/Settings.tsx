@@ -2,11 +2,9 @@ import { useState, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
-  Github,
   Palette,
   Plug,
   Shield,
-  User,
 } from "lucide-react";
 
 import { DashboardHeader } from "@/ui/components/DashboardHeader";
@@ -61,12 +59,6 @@ const Settings = () => {
       description: "Sessions, tokens, password",
       icon: Shield,
       badge: "Soon",
-    },
-    {
-      id: "account",
-      label: "Account",
-      description: "Identity, profile picture, role",
-      icon: User,
     },
   ];
 
@@ -245,10 +237,6 @@ const Settings = () => {
                       ]}
                     />
                   )}
-
-                  {section === "account" && (
-                    <AccountSection />
-                  )}
                 </div>
               </motion.section>
             </AnimatePresence>
@@ -307,18 +295,3 @@ const ComingSoon = ({ icon: Icon, title, description, bullets }: ComingSoonProps
   </div>
 );
 
-const AccountSection = () => (
-  <div className="space-y-4">
-    <div className="rounded-xl border border-border/40 bg-card/30 backdrop-blur-md p-5">
-      <p className="text-[13px] font-semibold mb-1">Profile management lives in the Profile page</p>
-      <p className="text-[12.5px] leading-relaxed text-muted-foreground/85">
-        For your name, avatar, GitHub handle and member metadata, jump to the{" "}
-        <a href="/profile" className="text-primary underline-offset-2 hover:underline">
-          Profile
-        </a>{" "}
-        section. Keeping this minimal so settings stays focused on workspace
-        configuration, not personal identity.
-      </p>
-    </div>
-  </div>
-);

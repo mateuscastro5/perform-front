@@ -75,28 +75,39 @@ export default function HowWeDoIt() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10 lg:gap-14">
           {/* ── Sticky Table of Contents ── */}
           <aside className="hidden lg:block">
-            <div className="sticky top-[148px] space-y-1">
+            <div className="sticky top-[160px] space-y-1">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/60 px-2 mb-3">
                 Contents
               </p>
               {sections.map((item) => (
-                <a
+                <button
                   key={item.id}
-                  href={`#${item.id}`}
-                  onClick={() => setSection(item.id)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSection(item.id);
+                    const el = document.getElementById(item.id);
+                    if (el) {
+                      // Account for the floating header (~ top:24 + 8 + 66 = 98) + breathing room
+                      const HEADER_OFFSET = 130;
+                      const target =
+                        el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+                      window.scrollTo({ top: target, behavior: "smooth" });
+                    }
+                  }}
                   className={cn(
-                    "group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12.5px] transition-colors",
+                    "w-full flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12.5px] transition-colors text-left",
                     section === item.id
                       ? "bg-primary/10 text-foreground"
                       : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/30",
                   )}
                 >
                   <item.icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="leading-none">{item.label}</span>
+                  <span className="leading-none flex-1">{item.label}</span>
                   {section === item.id && (
-                    <span className="ml-auto h-3.5 w-[2px] rounded-full bg-primary shadow-[0_0_8px_hsl(258_92%_70%/0.7)]" />
+                    <span className="h-3.5 w-[2px] rounded-full bg-primary shadow-[0_0_8px_hsl(258_92%_70%/0.7)]" />
                   )}
-                </a>
+                </button>
               ))}
             </div>
           </aside>
@@ -341,14 +352,9 @@ interface SectionProps {
 }
 
 const Section = ({ id, eyebrow, title, children }: SectionProps) => (
-  <motion.section
-    id={id}
-    initial={{ opacity: 0, y: 12 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-    className="scroll-mt-[148px] mb-14"
-  >
+  // Static rendering (no whileInView) so element heights don't shift during
+  // smooth-scroll, which would otherwise drift the scroll target offset.
+  <section id={id} className="scroll-mt-[140px] mb-14">
     <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.18em] text-primary/85">
       {eyebrow}
     </p>
@@ -358,7 +364,7 @@ const Section = ({ id, eyebrow, title, children }: SectionProps) => (
     <div className="mt-5 text-[15px] leading-relaxed text-muted-foreground/95 prose-content">
       {children}
     </div>
-  </motion.section>
+  </section>
 );
 
 const Pillars = ({ children }: { children: ReactNode }) => (
