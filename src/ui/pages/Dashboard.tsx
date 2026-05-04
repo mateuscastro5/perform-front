@@ -18,7 +18,6 @@ import {
   RefreshCcw,
   Search,
   Sparkles,
-  X,
 } from "lucide-react";
 import {
   BarChart,
@@ -32,7 +31,6 @@ import {
 } from "recharts";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -1053,22 +1051,13 @@ export default function Dashboard() {
                   </DialogDescription>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1 text-[11px] font-medium text-secondary tabular-nums">
-                    <Sparkles className="h-3 w-3" />
-                    {filteredInsightTotal}
-                    <span className="text-secondary/55">/</span>
-                    {insightTotal}
-                  </span>
-                  <DialogClose asChild>
-                    <button
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border/70 transition-colors"
-                      aria-label="Close"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </DialogClose>
-                </div>
+                {/* Count chip — DialogContent provides its own close button */}
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1 text-[11px] font-medium text-secondary tabular-nums mr-8">
+                  <Sparkles className="h-3 w-3" />
+                  {filteredInsightTotal}
+                  <span className="text-secondary/55">/</span>
+                  {insightTotal}
+                </span>
               </div>
 
               {/* Filter bar — flat, inline */}
