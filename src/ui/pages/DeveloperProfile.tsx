@@ -108,27 +108,110 @@ function deriveInsights(
   const strengths: string[] = [];
   const areasForImprovement: string[] = [];
 
-  if (avgConfidence >= 75) strengths.push('Consistent and predictable code changes (high AI confidence)');
-  if (topType === 'feature') strengths.push('Strong focus on feature delivery');
-  if (topType === 'refactor') strengths.push('Actively improves code quality through refactoring');
-  if (topType === 'test') strengths.push('Invests in test coverage');
-  if (trend === 'improving') strengths.push('Taking on increasingly complex work over time');
-  if (avgComplexity <= 50 && analyses.length >= 5) strengths.push('Delivers manageable, reviewable PRs');
+  // ── Distribution math used by several signals ──
+  const total = analyses.length;
+  const featureRatio = (typeCounts['feature'] ?? 0) / total;
+  const refactorRatio = (typeCounts['refactor'] ?? 0) / total;
+  const testRatio = (typeCounts['test'] ?? 0) / total;
+  const bugfixRatio = (typeCounts['bugfix'] ?? 0) / total;
+  const docsRatio = (typeCounts['docs'] ?? 0) / total;
 
-  if (avgConfidence < 60) areasForImprovement.push('PRs could benefit from more descriptive titles and descriptions');
-  if (avgComplexity > 75) areasForImprovement.push('Consider breaking large PRs into smaller reviewable units');
-  if (!typeCounts['test']) areasForImprovement.push('No test-only PRs detected — consider adding dedicated test coverage');
-  if (!typeCounts['docs'] && !typeCounts['refactor']) areasForImprovement.push('Technical debt and documentation PRs are underrepresented');
+  // Variance over complexity scores — proxy for consistency
+  const meanCplx = analyses.reduce((s, a) => s + a.complexityScore, 0) / total;
+  const variance =
+    analyses.reduce((s, a) => s + Math.pow(a.complexityScore - meanCplx, 2), 0) / total;
+  const stdDev = Math.sqrt(variance);
 
-  if (!strengths.length) strengths.push('Active contributor with analyzed PRs');
-  if (!areasForImprovement.length) areasForImprovement.push('Maintain current PR quality standards');
+  // Recent activity — last 14 days
+  const fourteenDaysAgo = Date.now() - 14 * 86_400_000;
+  const recentCount = analyses.filter(
+    (a) => new Date(a.createdAt).getTime() >= fourteenDaysAgo,
+  ).length;
 
-  const volumeScore = Math.min(100, Math.round(analyses.length * 5));
+  // Tech variety
+  const techCount = techSet.size;
+
+  // ── Strengths ──
+  if (avgConfidence >= 75)
+    strengths.push('Consistent, predictable code changes — the AI has high confidence in its assessments');
+  if (topType === 'feature' && featureRatio >= 0.5)
+    strengths.push('Strong feature delivery cadence — bulk of work moves the product forward');
+  if (refactorRatio >= 0.15)
+    strengths.push('Actively pays down technical debt through refactoring');
+  if (testRatio >= 0.1)
+    strengths.push('Invests in test coverage alongside shipped features');
+  if (trend === 'improving')
+    strengths.push('Taking on progressively heavier work — clear sign of growth');
+  if (avgComplexity <= 50 && total >= 5)
+    strengths.push('Ships manageable, reviewable PRs — easy on the review queue');
+  if (stdDev < 12 && total >= 5)
+    strengths.push('Predictable PR sizing — low variance in complexity makes planning easier');
+  if (techCount >= 3)
+    strengths.push(`Versatile across the stack — touches ${techCount}+ distinct technologies`);
+  if (recentCount >= 3)
+    strengths.push(`Recent momentum — ${recentCount} PRs analyzed in the last 14 days`);
+  if (bugfixRatio >= 0.15 && bugfixRatio <= 0.4)
+    strengths.push('Healthy mix of fixes and features — keeps the codebase honest');
+  if (avgComplexity > 60 && avgConfidence >= 70)
+    strengths.push('Owns substantial chunks of work the AI can read clearly — high-impact contributor');
+  if (total >= 15)
+    strengths.push('Sustained contributor — large enough sample to trust the signals');
+
+  // ── Growth areas ──
+  if (avgConfidence < 60)
+    areasForImprovement.push('PR titles and descriptions could be more descriptive — would lift AI confidence');
+  if (avgComplexity > 75)
+    areasForImprovement.push('Several heavy PRs — consider breaking into smaller reviewable chunks');
+  if (testRatio < 0.05 && total >= 5)
+    areasForImprovement.push('Almost no test-only PRs — dedicated coverage work could harden the codebase');
+  if (docsRatio < 0.03 && refactorRatio < 0.1 && total >= 5)
+    areasForImprovement.push('Documentation and refactor PRs are rare — schedule explicit time for them');
+  if (stdDev > 25)
+    areasForImprovement.push('PR size varies widely — narrower scope per PR would speed up reviews');
+  if (featureRatio > 0.85)
+    areasForImprovement.push('Almost everything is a feature — the codebase will accumulate debt without explicit refactor work');
+  if (bugfixRatio > 0.5)
+    areasForImprovement.push('More than half the work is bugfixes — investigate upstream root causes');
+  if (recentCount === 0 && total > 0)
+    areasForImprovement.push('No PRs analyzed in the last 14 days — fresh data would sharpen the assessment');
+  if (trend === 'declining')
+    areasForImprovement.push('Complexity trending down — confirm this matches the planned trajectory');
+  if (techCount === 1 && total >= 5)
+    areasForImprovement.push('Work concentrated on a single tech — cross-stack exposure could broaden impact');
+  if (total < 5)
+    areasForImprovement.push('Small sample so far — analyze more PRs for sturdier insights');
+
+  // Always guarantee at least 3 strengths and 3 growth areas. We pad with
+  // baseline observations rather than leaving the lists thin.
+  while (strengths.length < 3) {
+    if (total >= 5 && !strengths.some((s) => s.startsWith('Active'))) {
+      strengths.push('Active engineer with a steady stream of analyzed PRs');
+    } else if (!strengths.some((s) => s.startsWith('AI scoring'))) {
+      strengths.push(`AI scoring shows ${trendLabel} — useful baseline for reviews`);
+    } else if (!strengths.some((s) => s.startsWith('Code is'))) {
+      strengths.push('Code is legible enough that AI summaries land coherently');
+    } else {
+      strengths.push('Maintains current PR quality standards');
+    }
+  }
+  while (areasForImprovement.length < 3) {
+    if (!areasForImprovement.some((g) => g.startsWith('Pair more'))) {
+      areasForImprovement.push('Pair more recent PRs with descriptive bodies — even 2 lines of context boost AI confidence');
+    } else if (!areasForImprovement.some((g) => g.startsWith('Consider'))) {
+      areasForImprovement.push('Consider squad-level reviews on the heaviest PRs to spread context');
+    } else if (!areasForImprovement.some((g) => g.startsWith('Document'))) {
+      areasForImprovement.push('Document architectural decisions inline so future analyses have richer signal');
+    } else {
+      areasForImprovement.push('Maintain current cadence and revisit insights monthly');
+    }
+  }
+
+  const volumeScore = Math.min(100, Math.round(total * 5));
 
   return {
     summary,
-    strengths: strengths.slice(0, 3),
-    areasForImprovement: areasForImprovement.slice(0, 2),
+    strengths: strengths.slice(0, 4),
+    areasForImprovement: areasForImprovement.slice(0, 4),
     complexityScore: avgComplexity,
     confidenceScore: avgConfidence,
     volumeScore,
@@ -756,23 +839,36 @@ export default function DeveloperProfile() {
             const sortedAnalyses = [...aiAnalyses].sort(
               (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
             );
-            const complexityTimeSeries = sortedAnalyses.map((a) => ({
-              date: new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              complexity: a.complexityScore,
-              confidence: Math.round(a.confidence * 100),
-              prTitle: a.githubPullRequest?.title ?? 'PR',
-              prNumber: a.githubPullRequest?.prNumber ?? 0,
-            }));
+            const complexityTimeSeries = sortedAnalyses.map((a) => {
+              const hasPr = !!a.githubPullRequest;
+              return {
+                date: new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                fullDate: new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                complexity: a.complexityScore,
+                confidence: Math.round(a.confidence * 100),
+                // Use PR data when available, else the AI's technical summary as headline
+                title: hasPr
+                  ? a.githubPullRequest!.title
+                  : (a.technicalSummary?.slice(0, 80) || 'Commit-level analysis'),
+                ref: hasPr
+                  ? `#${a.githubPullRequest!.prNumber}`
+                  : `${a.changeType ?? 'analysis'}`.toLowerCase(),
+                kind: hasPr ? 'pr' : 'commit',
+                difficulty: a.difficultyLabel,
+              };
+            });
 
-            // Work distribution by changeType
+            // Work distribution by changeType — palette tuned so each slice
+            // is clearly distinguishable side-by-side. Avoids the previous
+            // violet/iris collision (refactor was too close to feature).
             const typeColors: Record<string, string> = {
-              feature:  'hsl(262 88% 68%)',
-              bugfix:   'hsl(0 86% 64%)',
-              refactor: 'hsl(232 78% 64%)',
-              test:     'hsl(152 72% 50%)',
-              docs:     'hsl(40 95% 65%)',
-              chore:    'hsl(220 14% 60%)',
-              other:    'hsl(320 76% 70%)',
+              feature:  'hsl(262 88% 68%)',  // violet
+              bugfix:   'hsl(8 86% 62%)',    // coral red
+              refactor: 'hsl(195 92% 55%)',  // cyan
+              test:     'hsl(152 72% 50%)',  // green
+              docs:     'hsl(40 95% 65%)',   // amber
+              chore:    'hsl(220 12% 55%)',  // slate
+              other:    'hsl(320 76% 68%)',  // pink
             };
             const typeCounts = aiAnalyses.reduce<Record<string, number>>((acc, a) => {
               const k = a.changeType?.toLowerCase() ?? 'other';
@@ -847,8 +943,8 @@ export default function DeveloperProfile() {
                       icon={isAnalyzingCommits ? RefreshCw : GitCommitHorizontal}
                       label={
                         isAnalyzingCommits
-                          ? `Commits ${Math.max(0, aiAnalyses.length - commitBaseline)}/${commitQueued}`
-                          : 'Commits'
+                          ? `Analyzing ${Math.max(0, aiAnalyses.length - commitBaseline)}/${commitQueued}`
+                          : 'Analyze commits'
                       }
                       onClick={handleAnalyzeCommits}
                       disabled={isAnalyzingCommits || isAnalyzing || isClearingMemory}
@@ -1012,33 +1108,70 @@ export default function DeveloperProfile() {
                           />
                           <RechartsTooltip
                             cursor={{ stroke: 'hsl(262 95% 75% / 0.4)', strokeWidth: 1 }}
+                            // Anchor the tooltip away from the cursor and let
+                            // recharts auto-flip near edges so it never gets
+                            // clipped (was rendering off-screen as an empty
+                            // 'PR' card before).
+                            offset={16}
+                            allowEscapeViewBox={{ x: false, y: true }}
+                            wrapperStyle={{ outline: 'none', zIndex: 30 }}
                             content={({ active, payload }) => {
                               if (!active || !payload?.length) return null;
                               const p = payload[0].payload;
+                              const cplxTone =
+                                p.complexity >= 75
+                                  ? 'text-amber-400'
+                                  : p.complexity >= 50
+                                    ? 'text-primary'
+                                    : 'text-success';
+                              const confTone =
+                                p.confidence >= 75
+                                  ? 'text-success'
+                                  : p.confidence >= 60
+                                    ? 'text-foreground'
+                                    : 'text-amber-400';
                               return (
-                                <div className="rounded-lg border border-border/55 bg-card/95 backdrop-blur-md px-3 py-2 shadow-orbit max-w-[260px]">
-                                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/65">
-                                    #{p.prNumber} · {p.date}
+                                <div className="rounded-xl border border-border/55 bg-card/95 backdrop-blur-md px-3.5 py-2.5 shadow-orbit min-w-[240px] max-w-[300px]">
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <span
+                                      className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider ${
+                                        p.kind === 'pr'
+                                          ? 'border-primary/35 bg-primary/10 text-primary'
+                                          : 'border-secondary/35 bg-secondary/10 text-secondary'
+                                      }`}
+                                    >
+                                      {p.kind === 'pr' ? p.ref : p.ref}
+                                    </span>
+                                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground/55 ml-auto">
+                                      {p.fullDate}
+                                    </span>
+                                  </div>
+                                  <p className="text-[12px] text-foreground/95 leading-snug line-clamp-2">
+                                    {p.title}
                                   </p>
-                                  <p className="mt-1 text-[11.5px] text-foreground/95 truncate">
-                                    {p.prTitle}
-                                  </p>
-                                  <div className="mt-2 flex items-center gap-3">
+                                  <div className="mt-2.5 pt-2.5 border-t border-border/30 grid grid-cols-3 gap-2">
                                     <div>
                                       <p className="text-[9px] font-mono uppercase text-muted-foreground/55">
                                         Cplx
                                       </p>
-                                      <p className="font-display text-[16px] font-light leading-none tabular-nums">
+                                      <p className={`mt-0.5 font-display text-[18px] font-light leading-none tabular-nums ${cplxTone}`}>
                                         {p.complexity}
                                       </p>
                                     </div>
-                                    <div className="h-7 w-px bg-border/40" />
                                     <div>
                                       <p className="text-[9px] font-mono uppercase text-muted-foreground/55">
                                         Conf
                                       </p>
-                                      <p className="font-display text-[16px] font-light leading-none tabular-nums">
+                                      <p className={`mt-0.5 font-display text-[18px] font-light leading-none tabular-nums ${confTone}`}>
                                         {p.confidence}%
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] font-mono uppercase text-muted-foreground/55">
+                                        Level
+                                      </p>
+                                      <p className="mt-0.5 text-[11px] font-medium text-foreground/85 leading-none capitalize">
+                                        {p.difficulty ?? '—'}
                                       </p>
                                     </div>
                                   </div>
