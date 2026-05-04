@@ -37,6 +37,18 @@ import { useUIStore, getSidebarOffset } from '../stores/uiStore';
 import type { GithubDeveloper } from '../types/github.types';
 import type { PullRequest, PRStatus } from '../types/dashboard.types';
 import type { PrAnalysis, DeveloperEvolution, DeveloperInsights } from '../types/analysis.types';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 // ── AI Insights derived from real analyses ────────────────────
 interface AiInsights {
@@ -722,7 +734,7 @@ export default function DeveloperProfile() {
             </div>
           </motion.section>
 
-          {/* ── AI Insights + Performance Breakdown ── */}
+          {/* ── AI Insights — full redesign with rich data viz ── */}
           {(() => {
             const useServer = serverInsights && serverInsights.memoryCount > 0;
             const summaryText = useServer ? serverInsights!.summary : aiInsights.summary;
@@ -740,14 +752,412 @@ export default function DeveloperProfile() {
                   }
                 : null;
 
+            // ─── Build chart data from PrAnalysis array ───
+            const sortedAnalyses = [...aiAnalyses].sort(
+              (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            );
+            const complexityTimeSeries = sortedAnalyses.map((a) => ({
+              date: new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              complexity: a.complexityScore,
+              confidence: Math.round(a.confidence * 100),
+              prTitle: a.githubPullRequest?.title ?? 'PR',
+              prNumber: a.githubPullRequest?.prNumber ?? 0,
+            }));
+
+            // Work distribution by changeType
+            const typeColors: Record<string, string> = {
+              feature:  'hsl(262 88% 68%)',
+              bugfix:   'hsl(0 86% 64%)',
+              refactor: 'hsl(232 78% 64%)',
+              test:     'hsl(152 72% 50%)',
+              docs:     'hsl(40 95% 65%)',
+              chore:    'hsl(220 14% 60%)',
+              other:    'hsl(320 76% 70%)',
+            };
+            const typeCounts = aiAnalyses.reduce<Record<string, number>>((acc, a) => {
+              const k = a.changeType?.toLowerCase() ?? 'other';
+              acc[k] = (acc[k] ?? 0) + 1;
+              return acc;
+            }, {});
+            const workDistribution = Object.entries(typeCounts)
+              .map(([name, value]) => ({
+                name: name.charAt(0).toUpperCase() + name.slice(1),
+                value,
+                color: typeColors[name] ?? typeColors.other,
+              }))
+              .sort((a, b) => b.value - a.value);
+
+            // Recent analyses for the bottom section (newest first)
+            const recentAnalyses = [...aiAnalyses]
+              .sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+              )
+              .slice(0, 4);
+
+            // Stand-out PR — highest complexity in the set
+            const heaviestPr = aiAnalyses.length > 0
+              ? aiAnalyses.reduce((heaviest, a) =>
+                  a.complexityScore > heaviest.complexityScore ? a : heaviest,
+                )
+              : null;
+
             return (
-              <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-5">
-                {/* ── AI Insights ── */}
+              <>
+                {/* ── Action toolbar ── */}
+                <motion.section
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.08, duration: 0.4 }}
+                  className="flex items-center justify-between gap-3 flex-wrap"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-9 w-9 rounded-xl border border-primary/30 bg-primary/10 flex items-center justify-center text-primary">
+                      <BrainCircuit className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-primary/85">
+                          Intelligence
+                        </p>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-2 py-0.5 text-[9.5px] font-medium text-secondary">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          AI
+                        </span>
+                      </div>
+                      <h2 className="mt-0.5 font-display text-[18px] font-light leading-none tracking-[-0.01em]">
+                        Performance Insights
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <ActionButton
+                      icon={isAnalyzing ? RefreshCw : Sparkles}
+                      label={
+                        isAnalyzing
+                          ? `Analyzing ${Math.max(0, aiAnalyses.length - analyzeBaseline)}/${analyzeQueued}`
+                          : 'Analyze PRs'
+                      }
+                      onClick={handleAnalyzePRs}
+                      disabled={isAnalyzing || devPrUuids.length === 0 || isAnalyzingCommits || isClearingMemory}
+                      variant="primary"
+                      loading={isAnalyzing}
+                    />
+                    <ActionButton
+                      icon={isAnalyzingCommits ? RefreshCw : GitCommitHorizontal}
+                      label={
+                        isAnalyzingCommits
+                          ? `Commits ${Math.max(0, aiAnalyses.length - commitBaseline)}/${commitQueued}`
+                          : 'Commits'
+                      }
+                      onClick={handleAnalyzeCommits}
+                      disabled={isAnalyzingCommits || isAnalyzing || isClearingMemory}
+                      variant="secondary"
+                      loading={isAnalyzingCommits}
+                      title="Analyze recent unanalyzed commits"
+                    />
+                    <ActionButton
+                      icon={isClearingMemory ? RefreshCw : Trash2}
+                      label=""
+                      onClick={handleClearMemory}
+                      disabled={isClearingMemory || isAnalyzing || isAnalyzingCommits}
+                      variant="ghost-destructive"
+                      loading={isClearingMemory}
+                      title="Clear AI memory"
+                    />
+                  </div>
+                </motion.section>
+
+                {analyzeError && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-[12px] text-destructive">
+                    {analyzeError}
+                  </div>
+                )}
+                {clearMemoryFeedback && (
+                  <div className="rounded-lg border border-success/30 bg-success/8 px-3 py-2 text-[12px] text-success">
+                    {clearMemoryFeedback}
+                  </div>
+                )}
+
+                {/* ── KPI strip — at-a-glance numbers tech leads care about ── */}
                 <motion.section
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, duration: 0.5 }}
-                  className="artemis-panel relative overflow-hidden rounded-[24px]"
+                  className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+                >
+                  <AiKpi
+                    label="Avg complexity"
+                    value={aiInsights.complexityScore}
+                    unit="/100"
+                    hint={
+                      aiInsights.complexityScore > 70
+                        ? 'heavy work'
+                        : aiInsights.complexityScore > 40
+                          ? 'moderate'
+                          : 'light work'
+                    }
+                    color="hsl(262 88% 68%)"
+                    trend={
+                      aiEvolution?.trend === 'improving'
+                        ? 'up'
+                        : aiEvolution?.trend === 'declining'
+                          ? 'down'
+                          : null
+                    }
+                  />
+                  <AiKpi
+                    label="AI confidence"
+                    value={aiInsights.confidenceScore}
+                    unit="%"
+                    hint={aiInsights.confidenceScore >= 75 ? 'high signal' : 'noisy data'}
+                    color="hsl(152 72% 50%)"
+                  />
+                  <AiKpi
+                    label="PRs analyzed"
+                    value={aiAnalyses.length}
+                    hint={
+                      useServer
+                        ? `${serverInsights!.memoryCount} memories`
+                        : aiAnalyses.length > 0
+                          ? 'in dataset'
+                          : 'not yet'
+                    }
+                    color="hsl(232 78% 64%)"
+                  />
+                  <AiKpi
+                    label="Heaviest PR"
+                    value={heaviestPr?.complexityScore ?? 0}
+                    unit="/100"
+                    hint={
+                      heaviestPr?.githubPullRequest?.prNumber
+                        ? `#${heaviestPr.githubPullRequest.prNumber}`
+                        : '—'
+                    }
+                    color="hsl(320 76% 70%)"
+                  />
+                </motion.section>
+
+                {/* ── Charts row: complexity over time + work distribution ── */}
+                {hasInsights && complexityTimeSeries.length > 0 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
+                    {/* Complexity over time */}
+                    <motion.section
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15, duration: 0.5 }}
+                      className="artemis-panel relative overflow-hidden rounded-[24px] p-6"
+                    >
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+                      />
+                      <header className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-[14px] font-semibold leading-none">Complexity over time</h3>
+                          <p className="mt-1 text-[11.5px] text-muted-foreground/70">
+                            Per-PR difficulty score, ordered chronologically.
+                          </p>
+                        </div>
+                        {trendInfo && trendInfo.kind !== 'narrative' && (
+                          <TrendPill kind={trendInfo.kind} label={trendInfo.label} />
+                        )}
+                      </header>
+
+                      <ResponsiveContainer width="100%" height={220}>
+                        <AreaChart
+                          data={complexityTimeSeries}
+                          margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                        >
+                          <defs>
+                            <linearGradient id="cplx-fill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="hsl(262 95% 70%)" stopOpacity={0.45} />
+                              <stop offset="80%" stopColor="hsl(262 95% 70%)" stopOpacity={0.04} />
+                              <stop offset="100%" stopColor="hsl(262 95% 70%)" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="cplx-stroke" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="hsl(232 88% 72%)" />
+                              <stop offset="55%" stopColor="hsl(262 95% 72%)" />
+                              <stop offset="100%" stopColor="hsl(320 88% 74%)" />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            vertical={false}
+                            stroke="hsl(220 14% 50%)"
+                            strokeOpacity={0.12}
+                            strokeDasharray="2 4"
+                          />
+                          <XAxis
+                            dataKey="date"
+                            tickLine={false}
+                            axisLine={false}
+                            interval="preserveStartEnd"
+                            tick={{
+                              fill: 'hsl(220 14% 55%)',
+                              fontSize: 10,
+                              fontFamily: 'ui-monospace, monospace',
+                            }}
+                          />
+                          <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            domain={[0, 100]}
+                            ticks={[0, 50, 100]}
+                            width={32}
+                            tick={{
+                              fill: 'hsl(220 14% 45%)',
+                              fontSize: 10,
+                              fontFamily: 'ui-monospace, monospace',
+                            }}
+                          />
+                          <RechartsTooltip
+                            cursor={{ stroke: 'hsl(262 95% 75% / 0.4)', strokeWidth: 1 }}
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const p = payload[0].payload;
+                              return (
+                                <div className="rounded-lg border border-border/55 bg-card/95 backdrop-blur-md px-3 py-2 shadow-orbit max-w-[260px]">
+                                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/65">
+                                    #{p.prNumber} · {p.date}
+                                  </p>
+                                  <p className="mt-1 text-[11.5px] text-foreground/95 truncate">
+                                    {p.prTitle}
+                                  </p>
+                                  <div className="mt-2 flex items-center gap-3">
+                                    <div>
+                                      <p className="text-[9px] font-mono uppercase text-muted-foreground/55">
+                                        Cplx
+                                      </p>
+                                      <p className="font-display text-[16px] font-light leading-none tabular-nums">
+                                        {p.complexity}
+                                      </p>
+                                    </div>
+                                    <div className="h-7 w-px bg-border/40" />
+                                    <div>
+                                      <p className="text-[9px] font-mono uppercase text-muted-foreground/55">
+                                        Conf
+                                      </p>
+                                      <p className="font-display text-[16px] font-light leading-none tabular-nums">
+                                        {p.confidence}%
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="complexity"
+                            stroke="url(#cplx-stroke)"
+                            strokeWidth={2}
+                            fill="url(#cplx-fill)"
+                            dot={{
+                              r: 3,
+                              fill: 'hsl(262 95% 75%)',
+                              strokeWidth: 0,
+                            }}
+                            activeDot={{
+                              r: 5,
+                              fill: 'hsl(0 0% 100%)',
+                              stroke: 'hsl(262 95% 75%)',
+                              strokeWidth: 2,
+                            }}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </motion.section>
+
+                    {/* Work distribution donut */}
+                    <motion.section
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, duration: 0.5 }}
+                      className="artemis-panel relative overflow-hidden rounded-[24px] p-6"
+                    >
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+                      />
+                      <header className="mb-3">
+                        <h3 className="text-[14px] font-semibold leading-none">Work distribution</h3>
+                        <p className="mt-1 text-[11.5px] text-muted-foreground/70">
+                          Where their PRs land by change type.
+                        </p>
+                      </header>
+
+                      <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                        <ResponsiveContainer width="100%" height={140}>
+                          <PieChart>
+                            <Pie
+                              data={workDistribution}
+                              dataKey="value"
+                              nameKey="name"
+                              innerRadius={42}
+                              outerRadius={64}
+                              strokeWidth={0}
+                              paddingAngle={2}
+                            >
+                              {workDistribution.map((slice, i) => (
+                                <Cell key={i} fill={slice.color} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip
+                              content={({ active, payload }) => {
+                                if (!active || !payload?.length) return null;
+                                const p = payload[0].payload;
+                                const pct = Math.round(
+                                  (p.value / workDistribution.reduce((s, w) => s + w.value, 0)) * 100,
+                                );
+                                return (
+                                  <div className="rounded-lg border border-border/55 bg-card/95 backdrop-blur-md px-3 py-2 shadow-orbit">
+                                    <p className="text-[12px] font-medium" style={{ color: p.color }}>
+                                      {p.name}
+                                    </p>
+                                    <p className="mt-0.5 font-mono text-[10.5px] tabular-nums text-muted-foreground/85">
+                                      {p.value} PR{p.value !== 1 ? 's' : ''} · {pct}%
+                                    </p>
+                                  </div>
+                                );
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+
+                        <ul className="space-y-1.5 min-w-0">
+                          {workDistribution.slice(0, 5).map((slice) => {
+                            const pct = Math.round(
+                              (slice.value / workDistribution.reduce((s, w) => s + w.value, 0)) * 100,
+                            );
+                            return (
+                              <li
+                                key={slice.name}
+                                className="flex items-center gap-2 text-[11.5px]"
+                              >
+                                <span
+                                  aria-hidden
+                                  className="h-2 w-2 rounded-full shrink-0"
+                                  style={{ background: slice.color }}
+                                />
+                                <span className="text-foreground/85 truncate">{slice.name}</span>
+                                <span className="ml-auto font-mono tabular-nums text-muted-foreground/60">
+                                  {pct}%
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    </motion.section>
+                  </div>
+                )}
+
+                {/* ── Narrative + Strengths/Growth ── */}
+                <motion.section
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25, duration: 0.5 }}
+                  className="artemis-panel relative overflow-hidden rounded-[24px] p-6 md:p-7"
                 >
                   <div
                     aria-hidden
@@ -758,86 +1168,20 @@ export default function DeveloperProfile() {
                     className="pointer-events-none absolute -top-24 -right-12 w-72 h-72 rounded-full opacity-30 blur-3xl"
                     style={{
                       background:
-                        "radial-gradient(circle, hsl(262 95% 65% / 0.30) 0%, transparent 70%)",
+                        'radial-gradient(circle, hsl(262 95% 65% / 0.25) 0%, transparent 70%)',
                     }}
                   />
 
-                  <div className="relative p-6 md:p-7">
-                    {/* Header row: title + actions */}
-                    <header className="flex items-start justify-between gap-3 flex-wrap mb-5">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl border border-primary/30 bg-primary/10 flex items-center justify-center text-primary">
-                          <BrainCircuit className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-[15px] font-semibold leading-none">
-                              AI Performance Insights
-                            </h3>
-                            <span className="inline-flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-2 py-0.5 text-[10px] font-medium text-secondary">
-                              <Sparkles className="h-2.5 w-2.5" />
-                              AI
-                            </span>
-                          </div>
-                          <p className="mt-1 text-[11.5px] text-muted-foreground/70 leading-relaxed">
-                            Narrative built from {aiAnalyses.length} analyzed PR{aiAnalyses.length !== 1 ? 's' : ''}
-                            {useServer ? ` · ${serverInsights!.memoryCount} memories` : ''}.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action group — same actions, much cleaner visual */}
-                      <div className="flex items-center gap-1.5">
-                        <ActionButton
-                          icon={isAnalyzing ? RefreshCw : Sparkles}
-                          label={
-                            isAnalyzing
-                              ? `Analyzing ${Math.max(0, aiAnalyses.length - analyzeBaseline)}/${analyzeQueued}`
-                              : 'Analyze PRs'
-                          }
-                          onClick={handleAnalyzePRs}
-                          disabled={isAnalyzing || devPrUuids.length === 0 || isAnalyzingCommits || isClearingMemory}
-                          variant="primary"
-                          loading={isAnalyzing}
-                        />
-                        <ActionButton
-                          icon={isAnalyzingCommits ? RefreshCw : GitCommitHorizontal}
-                          label={
-                            isAnalyzingCommits
-                              ? `Commits ${Math.max(0, aiAnalyses.length - commitBaseline)}/${commitQueued}`
-                              : 'Commits'
-                          }
-                          onClick={handleAnalyzeCommits}
-                          disabled={isAnalyzingCommits || isAnalyzing || isClearingMemory}
-                          variant="secondary"
-                          loading={isAnalyzingCommits}
-                          title="Analyze the developer's recent unanalyzed commits"
-                        />
-                        <ActionButton
-                          icon={isClearingMemory ? RefreshCw : Trash2}
-                          label=""
-                          onClick={handleClearMemory}
-                          disabled={isClearingMemory || isAnalyzing || isAnalyzingCommits}
-                          variant="ghost-destructive"
-                          loading={isClearingMemory}
-                          title="Clear AI memory"
-                        />
-                      </div>
+                  <div className="relative">
+                    <header className="mb-4">
+                      <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-secondary/85 mb-1.5">
+                        Narrative
+                      </p>
+                      <h3 className="font-display text-[20px] font-light leading-tight tracking-[-0.015em]">
+                        How they ship
+                      </h3>
                     </header>
 
-                    {/* Inline feedback / errors */}
-                    {analyzeError && (
-                      <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-[12px] text-destructive">
-                        {analyzeError}
-                      </div>
-                    )}
-                    {clearMemoryFeedback && (
-                      <div className="mb-4 rounded-lg border border-success/30 bg-success/8 px-3 py-2 text-[12px] text-success">
-                        {clearMemoryFeedback}
-                      </div>
-                    )}
-
-                    {/* Body */}
                     {!hasInsights ? (
                       <div className="py-10 text-center max-w-md mx-auto">
                         <div className="h-12 w-12 rounded-2xl bg-card/50 border border-border/40 flex items-center justify-center mx-auto mb-3">
@@ -845,18 +1189,20 @@ export default function DeveloperProfile() {
                         </div>
                         <p className="text-[14px] font-medium text-foreground">No analyses yet</p>
                         <p className="mt-1.5 text-[12.5px] text-muted-foreground/75 leading-relaxed">
-                          Click <span className="text-primary font-medium">Analyze PRs</span> above to generate
-                          a narrative on how this developer ships code.
+                          Click <span className="text-primary font-medium">Analyze PRs</span> at the top to
+                          let the AI build a narrative based on real diffs.
                         </p>
                       </div>
                     ) : (
                       <>
-                        {/* Narrative */}
-                        <p className="text-[13.5px] leading-relaxed text-muted-foreground/95 max-w-2xl">
-                          {summaryText}
-                        </p>
+                        {/* Quote-style narrative */}
+                        <blockquote className="relative pl-5 border-l-2 border-primary/40 max-w-3xl">
+                          <p className="text-[14.5px] leading-relaxed text-foreground/90">
+                            {summaryText}
+                          </p>
+                        </blockquote>
 
-                        {/* Strengths + Growth — clean two-column */}
+                        {/* Strengths + Growth */}
                         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
                           <InsightList
                             heading="Strengths"
@@ -872,33 +1218,20 @@ export default function DeveloperProfile() {
                           />
                         </div>
 
-                        {/* Tech tags + trend footer */}
-                        {(techList.length > 0 || trendInfo) && (
-                          <div className="mt-6 pt-4 border-t border-border/30 flex flex-wrap items-center gap-x-4 gap-y-2.5">
-                            {techList.length > 0 && (
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
-                                  Stack
-                                </span>
-                                {techList.map((t) => (
-                                  <span
-                                    key={t}
-                                    className="text-[11px] px-2 py-0.5 rounded-full border border-primary/25 bg-primary/8 text-primary"
-                                  >
-                                    {t}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
-                            {trendInfo && (
-                              <div className="flex items-center gap-2 ml-auto">
-                                <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
-                                  Trend
-                                </span>
-                                <TrendPill kind={trendInfo.kind} label={trendInfo.label} />
-                              </div>
-                            )}
+                        {/* Tech tags */}
+                        {techList.length > 0 && (
+                          <div className="mt-6 pt-4 border-t border-border/30 flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55 mr-1">
+                              Stack
+                            </span>
+                            {techList.map((t) => (
+                              <span
+                                key={t}
+                                className="text-[11px] px-2 py-0.5 rounded-full border border-primary/25 bg-primary/8 text-primary"
+                              >
+                                {t}
+                              </span>
+                            ))}
                           </div>
                         )}
                       </>
@@ -906,47 +1239,40 @@ export default function DeveloperProfile() {
                   </div>
                 </motion.section>
 
-                {/* ── Performance Breakdown ── */}
-                <motion.section
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, duration: 0.5 }}
-                  className="artemis-panel rounded-[24px] p-6 md:p-7 flex flex-col"
-                >
-                  <header className="mb-5">
-                    <h3 className="text-[15px] font-semibold leading-none">Performance Breakdown</h3>
-                    <p className="mt-1 text-[11.5px] text-muted-foreground/70">
-                      Three signals derived from analyzed PRs.
-                    </p>
-                  </header>
+                {/* ── Recent analyses with AI reasoning ── */}
+                {recentAnalyses.length > 0 && (
+                  <motion.section
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                    className="space-y-3"
+                  >
+                    <header className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-primary/85 mb-1.5">
+                          Evidence
+                        </p>
+                        <h3 className="font-display text-[18px] font-light leading-none tracking-[-0.01em]">
+                          Recent analyses
+                        </h3>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground/55 font-mono">
+                        {recentAnalyses.length} of {aiAnalyses.length}
+                      </span>
+                    </header>
 
-                  <div className="flex-1 flex flex-col gap-4">
-                    <BreakdownRow
-                      label="Avg PR complexity"
-                      sublabel="0 = trivial · 100 = heavy"
-                      value={aiInsights.complexityScore}
-                      unit="/100"
-                      color="hsl(232 88% 65%)"
-                    />
-                    <div className="h-px bg-border/35" />
-                    <BreakdownRow
-                      label="AI confidence"
-                      sublabel="how sure the model is"
-                      value={aiInsights.confidenceScore}
-                      unit="%"
-                      color="hsl(152 72% 50%)"
-                    />
-                    <div className="h-px bg-border/35" />
-                    <BreakdownRow
-                      label="Analyzed volume"
-                      sublabel={`${aiAnalyses.length} PR${aiAnalyses.length !== 1 ? 's' : ''} processed`}
-                      value={aiInsights.volumeScore}
-                      unit="/100"
-                      color="hsl(320 76% 70%)"
-                    />
-                  </div>
-                </motion.section>
-              </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {recentAnalyses.map((a) => (
+                        <AnalysisCard
+                          key={a.id}
+                          analysis={a}
+                          typeColor={typeColors[a.changeType?.toLowerCase() ?? 'other'] ?? typeColors.other}
+                        />
+                      ))}
+                    </div>
+                  </motion.section>
+                )}
+              </>
             );
           })()}
 
@@ -1284,3 +1610,177 @@ const BreakdownRow = ({ label, sublabel, value, unit, color }: BreakdownRowProps
     </div>
   </div>
 );
+
+/* ─────────── AI KPI tile (with optional trend arrow) ─────────── */
+
+interface AiKpiProps {
+  label: string;
+  value: number;
+  unit?: string;
+  hint?: string;
+  color: string;
+  trend?: 'up' | 'down' | null;
+}
+
+const AiKpi = ({ label, value, unit, hint, color, trend }: AiKpiProps) => (
+  <div className="artemis-panel relative overflow-hidden rounded-2xl p-4">
+    <div
+      aria-hidden
+      className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full opacity-25 blur-2xl"
+      style={{ background: color }}
+    />
+    <div className="relative">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground/55">
+          {label}
+        </p>
+        {trend && (
+          <span
+            className={`inline-flex h-4 w-4 items-center justify-center rounded-full ${
+              trend === 'up'
+                ? 'bg-success/15 text-success'
+                : 'bg-destructive/15 text-destructive'
+            }`}
+          >
+            {trend === 'up' ? (
+              <ArrowUpRight className="h-2.5 w-2.5" />
+            ) : (
+              <ArrowDownRight className="h-2.5 w-2.5" />
+            )}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 flex items-baseline gap-1">
+        <span className="font-display text-[28px] font-light leading-none tabular-nums">
+          {value}
+        </span>
+        {unit && (
+          <span className="text-[12px] text-muted-foreground/55 tabular-nums">
+            {unit}
+          </span>
+        )}
+      </p>
+      {hint && (
+        <p className="mt-1.5 text-[10.5px] text-muted-foreground/60">
+          {hint}
+        </p>
+      )}
+    </div>
+  </div>
+);
+
+/* ─────────── Analysis card — didactic, shows AI reasoning ─────────── */
+
+interface AnalysisCardProps {
+  analysis: PrAnalysis;
+  typeColor: string;
+}
+
+const AnalysisCard = ({ analysis, typeColor }: AnalysisCardProps) => {
+  const pr = analysis.githubPullRequest;
+  const conf = Math.round(analysis.confidence * 100);
+  const cplx = analysis.complexityScore;
+  const cplxTone =
+    cplx >= 75 ? 'text-amber-400' : cplx >= 50 ? 'text-primary' : 'text-success';
+
+  // Extract first 2 technologies
+  let techs: string[] = [];
+  try {
+    techs = (JSON.parse(analysis.technologies) as string[]).slice(0, 3);
+  } catch {
+    /* ignore */
+  }
+
+  const summary = analysis.justification?.trim() || analysis.technicalSummary?.trim() || '';
+
+  return (
+    <article className="artemis-panel relative overflow-hidden rounded-2xl p-5 group">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent"
+      />
+
+      {/* Header: complexity + type + PR link */}
+      <header className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Complexity badge */}
+          <div className="shrink-0 flex flex-col items-center justify-center h-12 w-12 rounded-xl border border-border/40 bg-card/60">
+            <span className={`font-display text-[18px] font-light leading-none tabular-nums ${cplxTone}`}>
+              {cplx}
+            </span>
+            <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/55 mt-0.5">
+              cplx
+            </span>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+                style={{
+                  background: `${typeColor}1f`,
+                  color: typeColor,
+                  border: `1px solid ${typeColor}40`,
+                }}
+              >
+                {analysis.changeType ?? 'other'}
+              </span>
+              <span
+                className={`text-[10px] font-mono uppercase tracking-wider ${
+                  conf >= 75
+                    ? 'text-success'
+                    : conf >= 60
+                      ? 'text-muted-foreground/70'
+                      : 'text-amber-400'
+                }`}
+              >
+                {conf}% conf
+              </span>
+            </div>
+            {pr ? (
+              <a
+                href={pr.htmlUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[13px] font-medium text-foreground hover:text-primary transition-colors line-clamp-1"
+              >
+                <span className="font-mono text-[11px] text-muted-foreground/45 mr-1.5 tabular-nums">
+                  #{pr.prNumber}
+                </span>
+                {pr.title}
+              </a>
+            ) : (
+              <p className="text-[13px] font-medium text-foreground line-clamp-1">
+                Analysis #{analysis.id.slice(0, 8)}
+              </p>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* AI reasoning */}
+      {summary && (
+        <p className="text-[12px] leading-relaxed text-muted-foreground/85 line-clamp-3 mb-3">
+          {summary}
+        </p>
+      )}
+
+      {/* Footer: techs + date */}
+      <footer className="flex items-center justify-between gap-3 pt-3 border-t border-border/25">
+        <div className="flex flex-wrap gap-1 min-w-0">
+          {techs.map((t) => (
+            <span
+              key={t}
+              className="text-[10px] px-1.5 py-0.5 rounded border border-border/40 bg-card/40 text-muted-foreground/85"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+        <span className="text-[10px] font-mono text-muted-foreground/55 shrink-0">
+          {formatDate(analysis.createdAt)}
+        </span>
+      </footer>
+    </article>
+  );
+};
