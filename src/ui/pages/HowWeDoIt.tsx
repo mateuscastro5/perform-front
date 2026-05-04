@@ -38,6 +38,7 @@ export default function HowWeDoIt() {
       { id: "data",        label: "Data sources",        icon: GitBranch },
       { id: "velocity",    label: "Velocity",            icon: TrendingUp },
       { id: "complexity",  label: "Complexity score",    icon: Brain },
+      { id: "tier",        label: "Performance tier",    icon: Activity },
       { id: "review",      label: "Review pressure",     icon: GitPullRequest },
       { id: "team",        label: "Team health",         icon: Users },
       { id: "ai",          label: "Where AI fits in",    icon: Sparkles },
@@ -229,8 +230,77 @@ export default function HowWeDoIt() {
               </p>
             </Section>
 
+            {/* ── Section: Performance tier ── */}
+            <Section id="tier" eyebrow="05 · Performance tier" title="From metrics to a closing recommendation">
+              <p>
+                The narrative on every developer profile ends on a single
+                forward-looking sentence — something a tech lead can act on
+                today. Concretely, it tells you whether to{" "}
+                <em>stretch, hold, protect</em> or <em>intervene</em>.
+              </p>
+              <p className="mt-4">
+                We synthesize that verdict from a weighted score in{" "}
+                <code>[0, 100]</code>:
+              </p>
+              <FormulaList
+                items={[
+                  ["complexity owned",       "30 pts — how heavy the work this dev consistently ships is"],
+                  ["AI confidence",          "20 pts — how legible their PRs are to read and review"],
+                  ["tech variety",           "15 pts — breadth across distinct technologies"],
+                  ["sustained volume",       "10 pts — sample size we can trust"],
+                  ["refactor discipline",    "10 pts — share of work targeting technical debt"],
+                  ["test discipline",        "10 pts — share of work dedicated to coverage"],
+                  ["PR-size consistency",    "5 pts — low variance in complexity over time"],
+                ]}
+              />
+              <p className="mt-4">
+                The score then maps to one of five tiers:
+              </p>
+              <div className="mt-4 rounded-xl border border-border/40 bg-card/40 backdrop-blur-md overflow-hidden">
+                {[
+                  { range: "≥ 82", tier: "Staff / Lead",       desc: "Rare combination of heavy work, broad stack, refactor and test discipline." },
+                  { range: "65 – 81", tier: "Senior",            desc: "Heavy work owned, broad stack, healthy mix across change types." },
+                  { range: "50 – 64", tier: "Advanced mid-level",desc: "Solid contributor, ready for stretch work — promote-ready signal when paired with an upward trajectory." },
+                  { range: "35 – 49", tier: "Mid-level",         desc: "Comfortable contributor, growth opportunities visible." },
+                  { range: "< 35",    tier: "Junior",            desc: "Early-career signals, ramp-up curve — pair with seniors on stretch work." },
+                ].map((row, i, arr) => (
+                  <div
+                    key={row.tier}
+                    className={cn(
+                      "grid grid-cols-[80px_180px_1fr] items-start gap-3 px-4 py-3 text-[12.5px]",
+                      i < arr.length - 1 && "border-b border-border/30",
+                    )}
+                  >
+                    <span className="font-mono text-[11px] text-primary/85">{row.range}</span>
+                    <span className="font-medium text-foreground">{row.tier}</span>
+                    <span className="text-muted-foreground/85">{row.desc}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-5">
+                On top of the tier we layer <strong>trajectory</strong> from
+                the complexity-over-time evolution:{" "}
+                <em>improving</em>, <em>stable</em>, or <em>declining</em>.
+                The closing sentence reflects both — a senior who is
+                trending down reads differently from a senior holding
+                steady.
+              </p>
+              <Note>
+                Sample sizes under 5 PRs deliberately do <strong>not</strong>{" "}
+                produce a verdict. We refuse to make a tier call from a
+                handful of analyses — the narrative explicitly asks for
+                more data instead.
+              </Note>
+              <Caveat>
+                A "tier" is a <em>conversation starter</em>, not a
+                performance review. We surface what the data says today;
+                the actual call about scope, promotion or coaching always
+                lives with humans who know context the AI doesn't.
+              </Caveat>
+            </Section>
+
             {/* ── Section: Review pressure ── */}
-            <Section id="review" eyebrow="05 · Review pressure" title="Where bottlenecks actually hide">
+            <Section id="review" eyebrow="06 · Review pressure" title="Where bottlenecks actually hide">
               <p>
                 "Open PRs" is a lagging indicator. The metric we trust is{" "}
                 <strong>awaiting-review time</strong>:
@@ -251,7 +321,7 @@ export default function HowWeDoIt() {
             </Section>
 
             {/* ── Section: Team health ── */}
-            <Section id="team" eyebrow="06 · Team health" title="Spread is the metric">
+            <Section id="team" eyebrow="07 · Team health" title="Spread is the metric">
               <p>
                 Performance is a team property, not a person property. The
                 squad page computes per-developer aggregates and surfaces:
@@ -268,7 +338,7 @@ export default function HowWeDoIt() {
             </Section>
 
             {/* ── Section: AI ── */}
-            <Section id="ai" eyebrow="07 · Where AI fits in" title="AI is a co-pilot, not the pilot">
+            <Section id="ai" eyebrow="08 · Where AI fits in" title="AI is a co-pilot, not the pilot">
               <p>
                 We use LLMs in three narrow places, and only with diff +
                 metadata as input — never with private team data outside the
@@ -299,7 +369,7 @@ export default function HowWeDoIt() {
             </Section>
 
             {/* ── Section: What we don't do ── */}
-            <Section id="limits" eyebrow="08 · What we don't do" title="Things we deliberately won't ship">
+            <Section id="limits" eyebrow="09 · What we don't do" title="Things we deliberately won't ship">
               <ul className="space-y-3 text-[15px] leading-relaxed text-muted-foreground/95">
                 <Li>
                   <strong>Single-number "developer score".</strong> Aggregating
