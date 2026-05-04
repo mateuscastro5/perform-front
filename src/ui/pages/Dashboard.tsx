@@ -389,10 +389,14 @@ export default function Dashboard() {
     {
       id: "prs" as const,
       title: "Pull Requests",
+      // The headline value is the all-time total. The helper now keeps the
+      // SAME mental model (open + closed = total), so the math reconciles
+      // at a glance. We surface "merged this week" as a secondary trend
+      // line, not as a slice of the headline number.
       value: githubStats?.pullRequests.total ?? 0,
-      // `.merged` from the backend = merges in the LAST 7 DAYS. Be explicit
-      // about the time window so the card doesn't imply an all-time count.
-      helper: `${githubStats?.pullRequests.open ?? 0} open · ${githubStats?.pullRequests.merged ?? 0} merged this week`,
+      helper: `${githubStats?.pullRequests.open ?? 0} open · ${
+        githubStats?.pullRequests.closed ?? 0
+      } closed · ${githubStats?.pullRequests.merged ?? 0} merged this week`,
       series: prSeries,
       gradientVar: "primary",
       icon: GitPullRequest,
@@ -1508,10 +1512,15 @@ interface WeeklyActivityChartProps {
 }
 
 /**
- * Weekly activity bar chart rendered as SVG. Replaces the previous div-based
- * implementation that depended on the custom `bg-aurora-gradient` class
- * (which was not painting reliably inside the modal). SVG with explicit
- * gradients is bulletproof.
+ * Weekly activity chart — refined, minimal aesthetic.
+ *
+ * Design notes:
+ * - Slim bars (8px) with subtle gradient that fades into transparency at
+ *   the bottom, so the bar feels rooted in the baseline rather than a
+ *   blocky rectangle.
+ * - Soft glow above the peak day to draw the eye without a heavy fill.
+ * - Dotted average baseline as a quiet reference line.
+ * - Compact viewBox so the chart sits as a single elegant unit.
  */
 function WeeklyActivityChart({ data, max }: WeeklyActivityChartProps) {
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -1523,43 +1532,69 @@ function WeeklyActivityChart({ data, max }: WeeklyActivityChartProps) {
     );
   }
 
-  // Geometry — viewBox is 700x220; padding leaves room for value labels and day axis
+  // Geometry — wider viewbox lets us anchor labels precisely
   const VIEW_W = 700;
-  const VIEW_H = 220;
-  const PAD_X = 12;
-  const PAD_TOP = 22;
-  const PAD_BOTTOM = 26;
+  const VIEW_H = 200;
+  const PAD_X = 24;
+  const PAD_TOP = 28;
+  const PAD_BOTTOM = 32;
   const usableW = VIEW_W - PAD_X * 2;
   const usableH = VIEW_H - PAD_TOP - PAD_BOTTOM;
 
   const slotWidth = usableW / data.length;
-  const barWidth = Math.min(slotWidth - 8, 64);
+  // Bars stay slim regardless of viewport — modern fitness/finance UI vibe
+  const barWidth = 10;
 
   const safeMax = max > 0 ? max : 1;
+  const avg = total / data.length;
+  const avgY = PAD_TOP + usableH - (avg / safeMax) * usableH;
+  const peakIdx = data.reduce(
+    (best, item, i) => (item.value > data[best].value ? i : best),
+    0,
+  );
 
   return (
     <div className="rounded-xl border border-border/40 bg-card/20 p-3">
       <svg
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-        className="w-full h-[220px]"
-        preserveAspectRatio="none"
+        className="w-full h-[200px]"
+        preserveAspectRatio="xMidYMid meet"
       >
         <defs>
+          {/* Bar fill — fades into transparent at the bottom */}
           <linearGradient id="weekly-bar" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(262 95% 72%)" stopOpacity="0.95" />
-            <stop offset="60%" stopColor="hsl(232 88% 65%)" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="hsl(232 78% 50%)" stopOpacity="0.55" />
+            <stop offset="0%" stopColor="hsl(262 95% 75%)" stopOpacity="1" />
+            <stop offset="55%" stopColor="hsl(245 88% 65%)" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="hsl(232 70% 40%)" stopOpacity="0" />
           </linearGradient>
+
+          {/* Peak dot glow */}
+          <radialGradient id="peak-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="hsl(262 100% 80%)" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="hsl(262 100% 80%)" stopOpacity="0" />
+          </radialGradient>
         </defs>
 
-        {/* Subtle baseline */}
+        {/* Bottom baseline — barely there */}
         <line
           x1={PAD_X}
-          y1={PAD_TOP + usableH}
+          y1={PAD_TOP + usableH + 0.5}
           x2={VIEW_W - PAD_X}
-          y2={PAD_TOP + usableH}
-          stroke="hsl(220 14% 38%)"
+          y2={PAD_TOP + usableH + 0.5}
+          stroke="hsl(220 14% 50%)"
           strokeWidth="1"
+          opacity="0.18"
+        />
+
+        {/* Average reference line — dotted */}
+        <line
+          x1={PAD_X}
+          y1={avgY}
+          x2={VIEW_W - PAD_X}
+          y2={avgY}
+          stroke="hsl(220 30% 65%)"
+          strokeWidth="0.8"
+          strokeDasharray="2 4"
           opacity="0.25"
         />
 
@@ -1567,23 +1602,17 @@ function WeeklyActivityChart({ data, max }: WeeklyActivityChartProps) {
           const slotX = PAD_X + idx * slotWidth;
           const cx = slotX + slotWidth / 2;
           const heightRatio = item.value / safeMax;
-          const barH = Math.max(heightRatio * usableH, item.value > 0 ? 6 : 0);
+          const barH = Math.max(heightRatio * usableH, item.value > 0 ? 4 : 0);
           const y = PAD_TOP + usableH - barH;
           const x = cx - barWidth / 2;
+          const isPeak = idx === peakIdx && item.value > 0;
 
           return (
             <g key={item.label}>
-              {/* Value above */}
-              <text
-                x={cx}
-                y={Math.max(y - 6, PAD_TOP + 12)}
-                textAnchor="middle"
-                fill="hsl(220 30% 75%)"
-                fontSize="11"
-                fontFamily="system-ui"
-              >
-                {item.value}
-              </text>
+              {/* Peak halo */}
+              {isPeak && (
+                <circle cx={cx} cy={y - 6} r={26} fill="url(#peak-glow)" />
+              )}
 
               {/* Bar */}
               {barH > 0 && (
@@ -1592,18 +1621,48 @@ function WeeklyActivityChart({ data, max }: WeeklyActivityChartProps) {
                   y={y}
                   width={barWidth}
                   height={barH}
-                  rx={6}
+                  rx={5}
                   fill="url(#weekly-bar)"
                 />
               )}
 
+              {/* Top cap dot — refined finish */}
+              {barH > 0 && (
+                <circle
+                  cx={cx}
+                  cy={y}
+                  r={isPeak ? 3 : 1.6}
+                  fill={isPeak ? "hsl(0 0% 100%)" : "hsl(262 95% 78%)"}
+                  style={
+                    isPeak
+                      ? { filter: "drop-shadow(0 0 4px hsl(262 95% 75%))" }
+                      : undefined
+                  }
+                />
+              )}
+
+              {/* Value above */}
+              <text
+                x={cx}
+                y={Math.max(y - 12, PAD_TOP + 6)}
+                textAnchor="middle"
+                fill={
+                  isPeak ? "hsl(220 30% 95%)" : "hsl(220 22% 70%)"
+                }
+                fontSize="11"
+                fontWeight={isPeak ? 600 : 400}
+                fontFamily="ui-monospace, monospace"
+              >
+                {item.value}
+              </text>
+
               {/* Day label below */}
               <text
                 x={cx}
-                y={VIEW_H - 8}
+                y={VIEW_H - 12}
                 textAnchor="middle"
-                fill="hsl(220 14% 55%)"
-                fontSize="10"
+                fill="hsl(220 14% 50%)"
+                fontSize="9"
                 fontFamily="ui-monospace, monospace"
                 letterSpacing="2"
               >
