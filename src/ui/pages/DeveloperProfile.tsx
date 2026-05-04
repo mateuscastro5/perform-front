@@ -61,6 +61,165 @@ interface AiInsights {
   hasData: boolean;
 }
 
+/**
+ * Performance tier verdict — synthesized from the same metrics that
+ * power the strengths/growth lists, but reduced to a single closing
+ * recommendation sentence appended to the narrative summary.
+ *
+ * Score model (0–100):
+ *   complexity owned     → 30 pts
+ *   AI confidence        → 20 pts
+ *   tech variety         → 15 pts
+ *   sustained volume     → 10 pts
+ *   refactor discipline  → 10 pts
+ *   test discipline      → 10 pts
+ *   PR-size consistency  →  5 pts
+ *
+ * Tiers:
+ *   ≥ 82 → 'staff'      (rare combination of high complexity, broad stack, refactor/test discipline)
+ *   65–81 → 'senior'     (heavy work, broad stack, healthy mix)
+ *   50–64 → 'mid+'       (advanced mid-level, ready for stretch)
+ *   35–49 → 'mid'        (solid contributor, growth opportunities visible)
+ *   < 35  → 'junior'     (early-career signals, ramp-up curve)
+ *
+ * Trajectory tone is layered on top of the tier so the closing sentence
+ * reflects both *where* the developer is and *which way they're going*.
+ */
+type PerformanceTier = 'junior' | 'mid' | 'mid+' | 'senior' | 'staff';
+
+interface VerdictInput {
+  avgComplexity: number;
+  avgConfidence: number;
+  techCount: number;
+  total: number;
+  refactorRatio: number;
+  testRatio: number;
+  stdDev: number;
+  trend: string;
+}
+
+function derivePerformanceVerdict(input: VerdictInput): {
+  tier: PerformanceTier;
+  score: number;
+  sentence: string;
+} {
+  const { avgComplexity, avgConfidence, techCount, total, refactorRatio, testRatio, stdDev, trend } = input;
+
+  // Sample too small → bail with an explicit "not enough data" sentence.
+  if (total < 5) {
+    return {
+      tier: 'mid',
+      score: 0,
+      sentence: `Sample size (${total} PR${total === 1 ? '' : 's'}) is too small for a confident performance read — analyze more PRs to sharpen the signal.`,
+    };
+  }
+
+  // ── Score the developer ──
+  let score = 0;
+  // Complexity owned (30)
+  if (avgComplexity >= 70) score += 30;
+  else if (avgComplexity >= 55) score += 22;
+  else if (avgComplexity >= 40) score += 14;
+  else score += 6;
+
+  // AI confidence (20) — high confidence = code reads cleanly
+  if (avgConfidence >= 85) score += 20;
+  else if (avgConfidence >= 70) score += 14;
+  else if (avgConfidence >= 55) score += 8;
+  else score += 3;
+
+  // Tech variety (15)
+  if (techCount >= 25) score += 15;
+  else if (techCount >= 12) score += 11;
+  else if (techCount >= 6) score += 7;
+  else if (techCount >= 3) score += 4;
+
+  // Sustained volume (10)
+  if (total >= 50) score += 10;
+  else if (total >= 25) score += 7;
+  else if (total >= 12) score += 4;
+  else score += 1;
+
+  // Refactor discipline (10)
+  if (refactorRatio >= 0.2) score += 10;
+  else if (refactorRatio >= 0.1) score += 6;
+  else if (refactorRatio >= 0.05) score += 3;
+
+  // Test discipline (10)
+  if (testRatio >= 0.2) score += 10;
+  else if (testRatio >= 0.1) score += 6;
+  else if (testRatio >= 0.05) score += 3;
+
+  // PR-size consistency (5)
+  if (stdDev < 12) score += 5;
+  else if (stdDev < 20) score += 3;
+  else if (stdDev < 28) score += 1;
+
+  // ── Map score → tier ──
+  let tier: PerformanceTier;
+  if (score >= 82) tier = 'staff';
+  else if (score >= 65) tier = 'senior';
+  else if (score >= 50) tier = 'mid+';
+  else if (score >= 35) tier = 'mid';
+  else tier = 'junior';
+
+  // ── Trajectory-aware sentence ──
+  // The action verb at the end of each sentence is what tech leads
+  // care about: hold, stretch, protect, invest, intervene.
+  const sentencesByTier: Record<PerformanceTier, Record<'improving' | 'stable' | 'declining', string>> = {
+    staff: {
+      improving:
+        'Performance reads at staff/lead caliber and the trajectory is still climbing — protect their focus and trust them with cross-cutting work.',
+      stable:
+        'Performance reads at staff/lead caliber — give them the hardest, most ambiguous problems and watch the rest of the team learn from their PRs.',
+      declining:
+        'Still operating at staff/lead caliber but recent complexity is trending down — check whether they\'re unblocked or being pulled into too many side projects.',
+    },
+    senior: {
+      improving:
+        'Currently performing at senior level with a clearly upward trajectory — promote-ready signal, stretch them with cross-team work.',
+      stable:
+        'Holds steady at senior level — consistent contributor the team relies on. Worth pairing them on the heaviest upcoming work.',
+      declining:
+        'Performance reads at senior level, but recent complexity is trending down — worth a 1:1 to understand whether scope, focus or motivation is shifting.',
+    },
+    'mid+': {
+      improving:
+        'Sits at advanced mid-level with a clear upward trajectory — promote-ready candidate, invest in stretch projects this quarter.',
+      stable:
+        'Solidly at advanced mid-level — consistent performer, ready for slightly heavier challenges to unlock the next step.',
+      declining:
+        'Currently at advanced mid-level, but momentum is slipping — protect their focus and clear blockers before complexity drops further.',
+    },
+    mid: {
+      improving:
+        'Mid-level today and growing fast — invest in stretch work and pair with a senior on the next ambitious project.',
+      stable:
+        'Comfortable mid-level performer — ready for slightly heavier challenges to keep growing.',
+      declining:
+        'Mid-level with declining complexity — worth a 1:1 to understand context before assuming this is just scope, not motivation.',
+    },
+    junior: {
+      improving:
+        'Early-career signals, but the trajectory is healthy — pair with seniors on stretch work to accelerate the ramp.',
+      stable:
+        'Junior-level signals — pair with seniors on stretch work and gradually increase scope to build confidence.',
+      declining:
+        'Early-career signals are dropping — likely needs more support, clearer requirements and a steadier mentor cycle.',
+    },
+  };
+
+  const traj = (trend === 'improving' || trend === 'declining' ? trend : 'stable') as
+    | 'improving'
+    | 'stable'
+    | 'declining';
+  return {
+    tier,
+    score,
+    sentence: sentencesByTier[tier][traj],
+  };
+}
+
 function deriveInsights(
   analyses: import('../types/analysis.types').PrAnalysis[],
   trend: string,
@@ -101,9 +260,28 @@ function deriveInsights(
   const trendLabel = trend === 'improving' ? 'increasing complexity' : trend === 'declining' ? 'decreasing complexity' : 'stable complexity';
   const complexityLabel = avgComplexity > 70 ? 'complex' : avgComplexity > 40 ? 'moderate' : 'low-complexity';
 
+  // ── Performance tier verdict (appended to the summary) ──
+  // We synthesize a tier and a forward-looking sentence so the narrative
+  // doesn't end on a number — it ends on a recommendation.
+  const verdict = derivePerformanceVerdict({
+    avgComplexity,
+    avgConfidence,
+    techCount: techSet.size,
+    total: analyses.length,
+    refactorRatio: (typeCounts['refactor'] ?? 0) / Math.max(analyses.length, 1),
+    testRatio: (typeCounts['test'] ?? 0) / Math.max(analyses.length, 1),
+    stdDev: (() => {
+      const m = analyses.reduce((s, a) => s + a.complexityScore, 0) / Math.max(analyses.length, 1);
+      const v = analyses.reduce((s, a) => s + Math.pow(a.complexityScore - m, 2), 0) / Math.max(analyses.length, 1);
+      return Math.sqrt(v);
+    })(),
+    trend,
+  });
+
   const summary = `Works primarily on ${topType} tasks with ${complexityLabel} PRs (avg score ${avgComplexity}/100). `
     + `${techList ? `Main technologies: ${techList}. ` : ''}`
-    + `AI scoring shows ${trendLabel} over the tracked period, with ${avgConfidence}% average confidence in assessments.`;
+    + `AI scoring shows ${trendLabel} over the tracked period, with ${avgConfidence}% average confidence in assessments. `
+    + verdict.sentence;
 
   // ── Distribution math used by several signals ──
   const total = analyses.length;
