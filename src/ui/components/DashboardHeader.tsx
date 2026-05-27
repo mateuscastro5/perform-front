@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ComponentType } from "react";
+import { type CSSProperties, type ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -37,6 +37,7 @@ import {
 import { ArtemisLogo } from "@/ui/components/cosmic";
 import { NotificationCenter } from "@/ui/components/NotificationCenter";
 import { useCommandPalette } from "@/ui/components/CommandPalette";
+import { useWindowControls } from "@/ui/hooks/useWindowControls";
 
 export interface BreadcrumbItem {
   label: string;
@@ -58,7 +59,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "home",       label: "Home",         icon: LayoutDashboard, path: "/" },
+  { id: "home",       label: "Home",         icon: LayoutDashboard, path: "/dashboard" },
   { id: "squads",     label: "Squads",       icon: Users,           path: "/squads" },
   { id: "complexity", label: "Complexity",   icon: GaugeCircle,     path: "/complexity" },
   { id: "how",        label: "How we do it", icon: Lightbulb,       path: "/how-we-do-it" },
@@ -76,7 +77,7 @@ const ACTIVE_LABEL: Record<string, string> = {
 };
 
 const ACTIVE_PATH: Record<string, string> = {
-  home: "/",
+  home: "/dashboard",
   squads: "/squads",
   complexity: "/complexity",
   how: "/how-we-do-it",
@@ -87,11 +88,11 @@ const ACTIVE_PATH: Record<string, string> = {
 const SPRING = { type: "spring", stiffness: 280, damping: 28 } as const;
 
 export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: DashboardHeaderProps) => {
-  const [, setIsMaximized] = useState(false);
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const { setOpen: openCommandPalette } = useCommandPalette();
+  const { isElectron, minimize, maximize, close } = useWindowControls();
 
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W;
   const headerLeft = SIDEBAR_LEFT + sidebarWidth + SIDEBAR_GAP;
@@ -106,17 +107,6 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase() ?? "")
       .join("") || "U";
-
-  useEffect(() => {
-    if (window.electronAPI) {
-      window.electronAPI.window.onMaximized(() => setIsMaximized(true));
-      window.electronAPI.window.onUnmaximized(() => setIsMaximized(false));
-    }
-  }, []);
-
-  const handleMinimize = async () => { if (window.electronAPI) await window.electronAPI.window.minimize(); };
-  const handleMaximize = async () => { if (window.electronAPI) await window.electronAPI.window.maximize(); };
-  const handleClose = async () => { if (window.electronAPI) await window.electronAPI.window.close(); };
 
   const handleTabChange = (item: NavItem) => {
     onTabChange(item.id);
@@ -292,33 +282,35 @@ export const DashboardHeader = ({ activeTab, onTabChange, breadcrumb }: Dashboar
           className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
         />
 
-        {/* Window controls strip */}
-        <div
-          className="relative z-10 flex h-8 items-center justify-end px-2"
-          style={{ WebkitAppRegion: "drag" } as CSSProperties}
-        >
-          <div className="flex" style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
-            <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-muted/30" onClick={handleMinimize}>
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-muted/30" onClick={handleMaximize}>
-              <Square className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-destructive/80 hover:text-destructive-foreground" onClick={handleClose}>
-              <X className="h-4 w-4" />
-            </Button>
+        {/* Window controls strip — Electron only */}
+        {isElectron && (
+          <div
+            className="relative z-10 flex h-8 items-center justify-end px-2"
+            style={{ WebkitAppRegion: "drag" } as CSSProperties}
+          >
+            <div className="flex" style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
+              <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-muted/30" onClick={minimize}>
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-muted/30" onClick={maximize}>
+                <Square className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-10 rounded-none hover:bg-destructive/80 hover:text-destructive-foreground" onClick={close}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main header row */}
         <div
-          className="relative z-10 flex h-[66px] items-center justify-between border-t border-white/5 px-6"
+          className={`relative z-10 flex h-[66px] items-center justify-between px-6 ${isElectron ? "border-t border-white/5" : ""}`}
           style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
         >
           {/* Breadcrumb */}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/dashboard")}
               className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-muted/20 hover:text-foreground"
             >
               <Home className="h-3.5 w-3.5" />

@@ -9,8 +9,8 @@ import { apiService, ApiError } from '../services/api.service';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'perform_token';
-const USER_KEY = 'perform_user';
+const TOKEN_KEY = 'artemis_token';
+const USER_KEY = 'artemis_user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

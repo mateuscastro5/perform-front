@@ -1,5 +1,5 @@
-const API_URL = 'http://localhost:3000';
-const TOKEN_KEY = 'perform_token';
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+const TOKEN_KEY = 'artemis_token';
 
 function getAuthHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

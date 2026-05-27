@@ -316,7 +316,7 @@ function CommandPalette() {
                       if (pr.url) {
                         handleSelect(() => window.open(pr.url, "_blank"));
                       } else {
-                        handleSelect(() => navigate("/"));
+                        handleSelect(() => navigate("/dashboard"));
                       }
                     }}
                   />

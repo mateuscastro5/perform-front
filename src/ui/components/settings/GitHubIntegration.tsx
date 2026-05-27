@@ -203,7 +203,7 @@ export const GitHubIntegration = () => {
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
                   To connect your desktop application, you need to create a <strong>Personal Access Token (PAT)</strong> on GitHub.
-                  This token will allow Perform to access your repositories and collect data on commits, pull requests, and code reviews.
+                  This token will allow Artemis to access your repositories and collect data on commits, pull requests, and code reviews.
                 </AlertDescription>
               </Alert>
 
@@ -347,7 +347,7 @@ export const GitHubIntegration = () => {
             <CardHeader>
               <CardTitle>Select Repositories</CardTitle>
               <CardDescription>
-                Choose which repositories will be monitored by Perform
+                Choose which repositories will be monitored by Artemis
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
