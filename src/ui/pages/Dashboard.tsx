@@ -8,7 +8,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   CalendarRange,
-  Circle,
   Clock,
   ExternalLink,
   Filter,
@@ -646,8 +645,6 @@ export default function Dashboard() {
 
     return labels.map((label, index) => ({ label, value: counts[index] }));
   }, [filteredCommitEvents, githubWeeklyActivity]);
-
-  const commitBarMax = Math.max(...commitsByWeekday.map((item) => item.value), 1);
 
   const insightStatusOptions = useMemo(() => {
     const source = selectedInsight === "review" ? prsInReview : detailedPrs;

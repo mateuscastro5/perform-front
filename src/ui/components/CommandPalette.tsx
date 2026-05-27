@@ -11,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 import { Command as CommandPrimitive } from "cmdk";
 import {
   ArrowRight,
-  GitCommit,
   GitPullRequest,
   Home,
   LayoutDashboard,

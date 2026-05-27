@@ -75,8 +75,8 @@ export function DeveloperEvolutionChart({ data }: DeveloperEvolutionChartProps) 
                   borderRadius: '8px',
                   fontSize: '12px',
                 }}
-                formatter={(value: number, name: string) => [
-                  value,
+                formatter={(value, name) => [
+                  value as number,
                   name === 'avg' ? 'Avg Complexity' : name === 'max' ? 'Max Complexity' : 'PRs',
                 ]}
               />

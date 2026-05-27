@@ -29,9 +29,7 @@ const Developers = () => {
     currentWork: "",
     email: dev.email,
     githubUsername: dev.githubUsername,
-    repositories: repositories.filter(repo =>
-      true
-    ),
+    repositories,
   }))
   .filter((dev) => (dev.activePRs + dev.commitsThisWeek + dev.reviewsPending) > 0);
 

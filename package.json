@@ -10,7 +10,7 @@
     "dev:electron": "npm run transpile:electron && npm run transpile:ipc && npm run transpile:preload && cross-env NODE_ENV=development electron .",
     "dev:web": "cross-env BUILD_TARGET=web vite",
     "build": "tsc -b && vite build",
-    "build:web": "cross-env BUILD_TARGET=web vite build",
+    "build:web": "cross-env BUILD_TARGET=web tsc -b && cross-env BUILD_TARGET=web vite build",
     "preview:web": "cross-env BUILD_TARGET=web vite preview",
     "lint": "eslint .",
     "preview": "vite preview",

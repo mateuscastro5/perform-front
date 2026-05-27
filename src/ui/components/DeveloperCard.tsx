@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 interface DeveloperCardProps {
   developer: {
-    id: number;
+    id: string;
     name: string;
     avatar: string;
     role: string;
