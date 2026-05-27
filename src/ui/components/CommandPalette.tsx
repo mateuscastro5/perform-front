@@ -11,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 import { Command as CommandPrimitive } from "cmdk";
 import {
   ArrowRight,
-  GitCommit,
   GitPullRequest,
   Home,
   LayoutDashboard,
@@ -316,7 +315,7 @@ function CommandPalette() {
                       if (pr.url) {
                         handleSelect(() => window.open(pr.url, "_blank"));
                       } else {
-                        handleSelect(() => navigate("/"));
+                        handleSelect(() => navigate("/dashboard"));
                       }
                     }}
                   />

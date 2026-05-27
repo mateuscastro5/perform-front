@@ -82,8 +82,8 @@ interface SquadApiResponse {
 interface DevPreview {
   id: string;
   name: string;
-  avatarUrl?: string;
-  githubUsername?: string;
+  avatarUrl?: string | null;
+  githubUsername?: string | null;
 }
 
 interface DeveloperDirectoryItemProps {

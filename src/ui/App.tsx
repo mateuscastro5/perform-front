@@ -12,27 +12,36 @@ import Register from './pages/Register';
 import ComplexityDashboard from './pages/ComplexityDashboard';
 import SquadXRayView from './pages/SquadXRayView';
 import HowWeDoIt from './pages/HowWeDoIt';
+import Landing from './pages/Landing';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { CommandPaletteProvider } from './components/CommandPalette';
+
+function RootRoute() {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />;
+}
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
 
   return (
     <Routes>
-      {/* Public Routes */}
-      <Route 
-        path="/login" 
-        element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} 
+      {/* Public */}
+      <Route path="/" element={<RootRoute />} />
+      <Route path="/how-we-do-it" element={<HowWeDoIt />} />
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
       />
-      <Route 
-        path="/register" 
-        element={isAuthenticated ? <Navigate to="/" replace /> : <Register />} 
+      <Route
+        path="/register"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
       />
 
-      {/* Protected Routes */}
+      {/* Protected */}
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
@@ -80,14 +89,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/how-we-do-it"
-        element={
-          <ProtectedRoute>
-            <HowWeDoIt />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/squad/:id/xray"
         element={
           <ProtectedRoute>
@@ -95,6 +96,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

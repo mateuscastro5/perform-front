@@ -1,8 +1,8 @@
-# perform-front
+# artemis-front
 
-Frontend da plataforma **Perform** — dashboard de performance técnica de desenvolvedores para Tech Leads.
+Frontend da plataforma **Artemis** — dashboard de performance técnica de desenvolvedores para Tech Leads, distribuído como app desktop (Electron) e web (mesma base de código).
 
-Construído com **React + TypeScript + Vite**. Interface inspirada em dashboards de eSports com tema dark, animações fluidas e dados em tempo real do GitHub + IA.
+Construído com **React + TypeScript + Vite**. Interface dark com identidade cósmica, animações fluidas e dados em tempo real do GitHub + IA.
 
 ---
 
@@ -34,7 +34,7 @@ Construído com **React + TypeScript + Vite**. Interface inspirada em dashboards
 ## Pré-requisitos
 
 - Node.js 20+
-- `perform-api` rodando em `http://localhost:3000`
+- API rodando em `http://localhost:3000` (ou a URL configurada via `VITE_API_URL`)
 
 ---
 

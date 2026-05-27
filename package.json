@@ -1,5 +1,5 @@
 {
-  "name": "alphasights-insights",
+  "name": "artemis",
   "private": true,
   "version": "0.0.0",
   "main": "dist-electron/main.js",
@@ -8,7 +8,10 @@
     "dev": "npm-run-all --parallel dev:react dev:electron",
     "dev:react": "vite",
     "dev:electron": "npm run transpile:electron && npm run transpile:ipc && npm run transpile:preload && cross-env NODE_ENV=development electron .",
+    "dev:web": "cross-env BUILD_TARGET=web vite",
     "build": "tsc -b && vite build",
+    "build:web": "cross-env BUILD_TARGET=web tsc -b && cross-env BUILD_TARGET=web vite build",
+    "preview:web": "cross-env BUILD_TARGET=web vite preview",
     "lint": "eslint .",
     "preview": "vite preview",
     "transpile:electron": "tsc --project src/electron/tsconfig.json",

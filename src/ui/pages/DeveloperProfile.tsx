@@ -14,12 +14,9 @@ import {
   BrainCircuit,
   Zap,
   TrendingUp,
-  AlertTriangle,
-  CheckCircle2,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
-  Clock,
   ExternalLink,
   Search,
   SlidersHorizontal,
@@ -613,8 +610,8 @@ export default function DeveloperProfile() {
 
   const [developer, setDeveloper] = useState<GithubDeveloper | null>(null);
   const [devPRs, setDevPRs] = useState<PullRequest[]>([]);
-  const [devCommits, setDevCommits] = useState<number | null>(null);
-  const [devReviews, setDevReviews] = useState<number | null>(null);
+  const [, setDevCommits] = useState<number | null>(null);
+  const [, setDevReviews] = useState<number | null>(null);
   const [prSearch, setPrSearch] = useState('');
   const [prStatusFilter, setPrStatusFilter] = useState<PRStatus | 'all'>('all');
   const [aiAnalyses, setAiAnalyses] = useState<PrAnalysis[]>([]);
@@ -2032,35 +2029,6 @@ const TrendPill = ({ kind, label }: TrendPillProps) => {
     </span>
   );
 };
-
-interface BreakdownRowProps {
-  label: string;
-  sublabel: string;
-  value: number;
-  unit: string;
-  color: string;
-}
-
-const BreakdownRow = ({ label, sublabel, value, unit, color }: BreakdownRowProps) => (
-  <div className="flex items-center gap-4">
-    <DonutScore value={value} size={68} color={color} />
-    <div className="flex-1 min-w-0">
-      <p className="text-[13px] font-medium text-foreground leading-none">{label}</p>
-      <p className="mt-1 text-[11px] text-muted-foreground/65">{sublabel}</p>
-      <div className="mt-2.5 flex items-center gap-2">
-        <div className="h-1 flex-1 rounded-full bg-muted/40 overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{ width: `${value}%`, background: color }}
-          />
-        </div>
-        <span className="font-mono text-[10.5px] tabular-nums text-foreground/85">
-          {value}{unit}
-        </span>
-      </div>
-    </div>
-  </div>
-);
 
 /* ─────────── AI KPI tile (with optional trend arrow) ─────────── */
 

@@ -1,6 +1,6 @@
 {
-    "appId": "com.perform.insights",
-    "productName": "Perform",
+    "appId": "com.artemis.insights",
+    "productName": "Artemis",
     "copyright": "Copyright © 2025 Mateus Fagundes",
     "forceCodeSigning": false,
     "files": ["dist-electron", "dist-react"],
@@ -20,7 +20,7 @@
         ],
         "icon": "build/icons/mac/icon.icns",
         "category": "public.app-category.business",
-        "artifactName": "Perform-${version}-${arch}.dmg"
+        "artifactName": "Artemis-${version}-${arch}.dmg"
     },
     "linux": {
         "target": [
@@ -39,7 +39,7 @@
         ],
         "category": "Office",
         "icon": "build/icons/png",
-        "artifactName": "Perform-${version}-${arch}.${ext}"
+        "artifactName": "Artemis-${version}-${arch}.${ext}"
     },
     "win": {
         "target": [
@@ -59,10 +59,10 @@
         "installerHeaderIcon": "build/icons/win/icon.ico",
         "createDesktopShortcut": true,
         "createStartMenuShortcut": true,
-        "shortcutName": "Perform",
-        "artifactName": "Perform-setup.exe"
+        "shortcutName": "Artemis",
+        "artifactName": "Artemis-setup.exe"
     },
     "portable": {
-        "artifactName": "Perform-portable.exe"
+        "artifactName": "Artemis-portable.exe"
     }
 }
