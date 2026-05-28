@@ -129,7 +129,7 @@ export function CosmicJourney({ targetRef, className }: CosmicJourneyProps) {
             b: j,
             appearAt: Math.random() * 0.9,
             fadeDuration: 0.08 + Math.random() * 0.12,
-            maxAlpha: 0.18 + strength * 0.22,
+            maxAlpha: 0.04 + strength * 0.06,
           });
           outgoing[i]++;
           outgoing[j]++;
@@ -176,10 +176,10 @@ export function CosmicJourney({ targetRef, className }: CosmicJourneyProps) {
         const by = b.y * height - baseShiftY * (0.25 + b.depth * 0.6);
 
         const grad = ctx.createLinearGradient(ax, ay, bx, by);
-        grad.addColorStop(0, `hsla(262, 92%, 75%, ${e.maxAlpha * k})`);
-        grad.addColorStop(1, `hsla(320, 92%, 75%, ${e.maxAlpha * k * 0.7})`);
+        grad.addColorStop(0, `hsla(262, 92%, 80%, ${e.maxAlpha * k})`);
+        grad.addColorStop(1, `hsla(320, 92%, 80%, ${e.maxAlpha * k * 0.7})`);
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 0.6;
+        ctx.lineWidth = 0.35;
         ctx.beginPath();
         ctx.moveTo(ax, ay);
         ctx.lineTo(bx, by);
@@ -200,17 +200,17 @@ export function CosmicJourney({ targetRef, className }: CosmicJourneyProps) {
         // Wrap vertically so the field never empties as you scroll.
         const yy = ((sy % height) + height) % height;
 
-        const halo = ctx.createRadialGradient(sx, yy, 0, sx, yy, s.r * 5);
-        halo.addColorStop(0, `hsla(${s.hue}, 90%, 80%, ${0.55 * tw})`);
-        halo.addColorStop(1, `hsla(${s.hue}, 90%, 80%, 0)`);
+        const halo = ctx.createRadialGradient(sx, yy, 0, sx, yy, s.r * 4);
+        halo.addColorStop(0, `hsla(${s.hue}, 90%, 82%, ${0.18 * tw})`);
+        halo.addColorStop(1, `hsla(${s.hue}, 90%, 82%, 0)`);
         ctx.fillStyle = halo;
         ctx.beginPath();
-        ctx.arc(sx, yy, s.r * 5, 0, Math.PI * 2);
+        ctx.arc(sx, yy, s.r * 4, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = `hsla(${s.hue}, 95%, 92%, ${Math.min(tw * 0.95, 1)})`;
+        ctx.fillStyle = `hsla(${s.hue}, 95%, 94%, ${Math.min(tw * 0.4, 0.55)})`;
         ctx.beginPath();
-        ctx.arc(sx, yy, s.r, 0, Math.PI * 2);
+        ctx.arc(sx, yy, s.r * 0.8, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -228,16 +228,16 @@ export function CosmicJourney({ targetRef, className }: CosmicJourneyProps) {
         const nx = dx / len;
         const ny = dy / len;
 
-        const tailLen = 120;
+        const tailLen = 90;
         const tailX = headX - nx * tailLen;
         const tailY = headY - ny * tailLen;
 
         const fade = Math.sin(Math.PI * t); // fade in then out
         const grad = ctx.createLinearGradient(tailX, tailY, headX, headY);
-        grad.addColorStop(0, `hsla(${c.hue}, 95%, 75%, 0)`);
-        grad.addColorStop(1, `hsla(${c.hue}, 95%, 85%, ${0.65 * fade})`);
+        grad.addColorStop(0, `hsla(${c.hue}, 95%, 80%, 0)`);
+        grad.addColorStop(1, `hsla(${c.hue}, 95%, 88%, ${0.22 * fade})`);
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 0.9;
         ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(tailX, tailY);
@@ -245,12 +245,12 @@ export function CosmicJourney({ targetRef, className }: CosmicJourneyProps) {
         ctx.stroke();
 
         // Head bloom
-        const headGrad = ctx.createRadialGradient(headX, headY, 0, headX, headY, 18);
-        headGrad.addColorStop(0, `hsla(${c.hue}, 100%, 92%, ${0.9 * fade})`);
+        const headGrad = ctx.createRadialGradient(headX, headY, 0, headX, headY, 12);
+        headGrad.addColorStop(0, `hsla(${c.hue}, 100%, 94%, ${0.35 * fade})`);
         headGrad.addColorStop(1, `hsla(${c.hue}, 100%, 80%, 0)`);
         ctx.fillStyle = headGrad;
         ctx.beginPath();
-        ctx.arc(headX, headY, 18, 0, Math.PI * 2);
+        ctx.arc(headX, headY, 12, 0, Math.PI * 2);
         ctx.fill();
       }
 
