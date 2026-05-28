@@ -1,4 +1,5 @@
 import { useState, FormEvent, type CSSProperties } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Github, Lock, Mail, Loader2 } from "lucide-react";
 
@@ -145,9 +146,14 @@ const Login = () => {
         className="relative z-10 flex items-center justify-between px-8 py-6 lg:px-12"
         style={{ WebkitAppRegion: "drag" } as CSSProperties}
       >
-        <div style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
+        <Link
+          to="/"
+          aria-label="Back to Artemis home"
+          style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+          className="transition-opacity hover:opacity-80"
+        >
           <ArtemisLogo />
-        </div>
+        </Link>
       </header>
 
       {/* ── Main — 2-column at lg, single-column below ──────────────── */}
@@ -173,24 +179,6 @@ const Login = () => {
               Track velocity, complexity and team health across every squad —
               with the focused, quiet interface your engineering org deserves.
             </p>
-
-            <dl className="mt-10 grid max-w-md grid-cols-3 gap-3">
-              {[
-                { k: "Squads", v: "All" },
-                { k: "Latency", v: "12ms" },
-                { k: "Uptime", v: "99.98%" },
-              ].map((item) => (
-                <div
-                  key={item.k}
-                  className="rounded-xl border border-border/40 bg-card/30 px-3 py-3 backdrop-blur-md transition-colors hover:border-border/70"
-                >
-                  <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                    {item.k}
-                  </dt>
-                  <dd className="mt-1 font-display text-lg text-foreground">{item.v}</dd>
-                </div>
-              ))}
-            </dl>
           </motion.div>
         </section>
 
