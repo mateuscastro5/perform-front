@@ -160,28 +160,32 @@ const Landing = () => {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-12">
-        <ArtemisLogo />
-        <nav className="flex items-center gap-2 sm:gap-4">
-          <Link
-            to="/how-we-do-it"
-            className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline"
-          >
-            How we do it
+      <header className="sticky top-0 z-30 border-b border-border/0 bg-background/60 backdrop-blur-xl transition-colors supports-[backdrop-filter]:bg-background/40">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5 lg:px-12">
+          <Link to="/" aria-label="Artemis home" className="transition-opacity hover:opacity-80">
+            <ArtemisLogo />
           </Link>
-          <a
-            href="https://github.com/mateuscastro5/perform-front"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="GitHub"
-            className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground sm:inline-flex"
-          >
-            <Github className="h-4 w-4" />
-          </a>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/login">Sign in</Link>
-          </Button>
-        </nav>
+          <nav className="flex items-center gap-3 sm:gap-4">
+            <Link
+              to="/how-we-do-it"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              How we do it
+            </Link>
+            <a
+              href="https://github.com/mateuscastro5/perform-front"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub"
+              className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground sm:inline-flex"
+            >
+              <Github className="h-4 w-4" />
+            </a>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/login">Sign in</Link>
+            </Button>
+          </nav>
+        </div>
       </header>
 
       {/* Hero */}
