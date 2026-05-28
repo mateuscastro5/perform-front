@@ -80,8 +80,9 @@ export default function HowWeDoIt() {
 
       {/* Cosmic journey — constellations + parallax stars + comets that
           progress as the reader scrolls down. Fixed to the viewport so
-          the canvas never has to grow to article length. */}
-      <div className="pointer-events-none fixed inset-0 z-0 opacity-90">
+          the canvas never has to grow to article length. Kept very low
+          opacity so it reads as ambient texture, not foreground art. */}
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-25">
         <CosmicJourney targetRef={journeyRef} className="absolute inset-0" />
       </div>
 
@@ -221,8 +222,8 @@ export default function HowWeDoIt() {
               </Note>
             </Section>
 
-            <div className="my-4 flex justify-end opacity-70">
-              <JourneyMilestone variant="ringed" side="right" className="-mr-6 lg:-mr-12" />
+            <div className="my-2 flex justify-end opacity-[0.12]">
+              <JourneyMilestone variant="ringed" side="right" className="-mr-6 lg:-mr-12 scale-50" />
             </div>
 
             {/* ── Section: Velocity ── */}
@@ -340,8 +341,8 @@ export default function HowWeDoIt() {
               </Caveat>
             </Section>
 
-            <div className="my-4 flex justify-start opacity-70">
-              <JourneyMilestone variant="binary" side="left" className="-ml-6 lg:-ml-12" />
+            <div className="my-2 flex justify-start opacity-[0.12]">
+              <JourneyMilestone variant="binary" side="left" className="-ml-6 lg:-ml-12 scale-50" />
             </div>
 
             {/* ── Section: Review pressure ── */}
@@ -382,8 +383,8 @@ export default function HowWeDoIt() {
               </Caveat>
             </Section>
 
-            <div className="my-4 flex justify-end opacity-70">
-              <JourneyMilestone variant="nebula" side="right" className="-mr-6 lg:-mr-12" />
+            <div className="my-2 flex justify-end opacity-[0.12]">
+              <JourneyMilestone variant="nebula" side="right" className="-mr-6 lg:-mr-12 scale-50" />
             </div>
 
             {/* ── Section: AI ── */}
