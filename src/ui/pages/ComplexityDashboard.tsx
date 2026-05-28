@@ -16,6 +16,7 @@ import { apiService } from "../services/api.service";
 import { DoubtfulAnalysisQueue } from "../components/DoubtfulAnalysisQueue";
 import { DashboardHeader } from "../components/DashboardHeader";
 import { useUIStore, getSidebarOffset } from "../stores/uiStore";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { cn } from "../lib/utils";
 import type { PrAnalysis, SubmitFeedback } from "../types/analysis.types";
 
@@ -29,7 +30,8 @@ import type { PrAnalysis, SubmitFeedback } from "../types/analysis.types";
 export default function ComplexityDashboard() {
   const { token } = useAuth();
   const { sidebarCollapsed } = useUIStore();
-  const contentLeft = getSidebarOffset(sidebarCollapsed);
+  const isMobile = useIsMobile();
+  const contentLeft = getSidebarOffset(sidebarCollapsed, isMobile);
   const [activeTab, setActiveTab] = useState("complexity");
   const [doubtful, setDoubtful] = useState<PrAnalysis[]>([]);
   const [loading, setLoading] = useState(true);

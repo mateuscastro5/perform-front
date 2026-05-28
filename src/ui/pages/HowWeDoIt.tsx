@@ -16,6 +16,7 @@ import {
 import { DashboardHeader } from "@/ui/components/DashboardHeader";
 import { useAuth } from "@/ui/contexts/AuthContext";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
+import { useIsMobile } from "@/ui/hooks/useIsMobile";
 import { cn } from "@/ui/lib/utils";
 import { ArtemisLogo } from "@/ui/components/cosmic";
 import { Button } from "@/ui/components/ui/button";
@@ -32,7 +33,8 @@ export default function HowWeDoIt() {
   const [activeTab, setActiveTab] = useState("how");
   const { isAuthenticated } = useAuth();
   const { sidebarCollapsed } = useUIStore();
-  const contentLeft = isAuthenticated ? getSidebarOffset(sidebarCollapsed) : 0;
+  const isMobile = useIsMobile();
+  const contentLeft = isAuthenticated ? getSidebarOffset(sidebarCollapsed, isMobile) : 0;
 
   // Sticky-TOC active section state, updated on click.
   const [section, setSection] = useState<string>("philosophy");

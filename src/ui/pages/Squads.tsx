@@ -9,6 +9,7 @@ import { Plus, Trash2, Users, Check, X, UserPlus, Search, Shield, ChevronRight, 
 import { Input } from "@/ui/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
+import { useIsMobile } from "@/ui/hooks/useIsMobile";
 import {
   Dialog,
   DialogContent,
@@ -144,7 +145,8 @@ const Squads = () => {
   const navigate = useNavigate();
 
   const { sidebarCollapsed } = useUIStore();
-  const contentLeft = getSidebarOffset(sidebarCollapsed);
+  const isMobile = useIsMobile();
+  const contentLeft = getSidebarOffset(sidebarCollapsed, isMobile);
 
   const [squads, setSquads] = useState<Squad[]>([]);
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);

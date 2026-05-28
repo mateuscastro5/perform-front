@@ -31,6 +31,7 @@ import { useDashboard } from '../contexts/DashboardContext';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api.service';
 import { useUIStore, getSidebarOffset } from '../stores/uiStore';
+import { useIsMobile } from '../hooks/useIsMobile';
 import type { GithubDeveloper } from '../types/github.types';
 import type { PullRequest, PRStatus } from '../types/dashboard.types';
 import type { PrAnalysis, DeveloperEvolution, DeveloperInsights } from '../types/analysis.types';
@@ -606,7 +607,8 @@ export default function DeveloperProfile() {
   const { githubDevelopers } = useDashboard();
   const { token } = useAuth();
   const { sidebarCollapsed } = useUIStore();
-  const contentLeft = getSidebarOffset(sidebarCollapsed);
+  const isMobile = useIsMobile();
+  const contentLeft = getSidebarOffset(sidebarCollapsed, isMobile);
 
   const [developer, setDeveloper] = useState<GithubDeveloper | null>(null);
   const [devPRs, setDevPRs] = useState<PullRequest[]>([]);

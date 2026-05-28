@@ -10,6 +10,7 @@ import {
 import { DashboardHeader } from "@/ui/components/DashboardHeader";
 import { GitHubIntegration } from "@/ui/components/settings/GitHubIntegration";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
+import { useIsMobile } from "@/ui/hooks/useIsMobile";
 import { cn } from "@/ui/lib/utils";
 
 interface SettingsSection {
@@ -30,7 +31,8 @@ const Settings = () => {
   const [section, setSection] = useState<string>("integrations");
 
   const { sidebarCollapsed } = useUIStore();
-  const contentLeft = getSidebarOffset(sidebarCollapsed);
+  const isMobile = useIsMobile();
+  const contentLeft = getSidebarOffset(sidebarCollapsed, isMobile);
 
   const sections: SettingsSection[] = [
     {

@@ -26,6 +26,7 @@ import { useDashboard } from "@/ui/contexts/DashboardContext";
 import { apiService } from "@/ui/services/api.service";
 import { useProgressToast } from "@/ui/hooks/useProgressToast";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
+import { useIsMobile } from "@/ui/hooks/useIsMobile";
 import { cn } from "@/ui/lib/utils";
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
@@ -69,7 +70,8 @@ export default function Profile() {
   const navigate = useNavigate();
 
   const { sidebarCollapsed } = useUIStore();
-  const contentLeft = getSidebarOffset(sidebarCollapsed);
+  const isMobile = useIsMobile();
+  const contentLeft = getSidebarOffset(sidebarCollapsed, isMobile);
 
   const [form, setForm] = useState<ProfileFormState>({
     name: "",

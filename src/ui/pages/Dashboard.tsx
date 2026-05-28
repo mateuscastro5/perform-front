@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { DashboardHeader } from "@/ui/components/DashboardHeader";
 import { useDashboard } from "@/ui/contexts/DashboardContext";
 import { useAuth } from "@/ui/contexts/AuthContext";
+import { useIsMobile } from "@/ui/hooks/useIsMobile";
+import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
 import { apiService } from "@/ui/services/api.service";
 import {
   ArrowDownRight,
@@ -223,6 +225,9 @@ function getStatusBadgeVariant(status: string): "default" | "secondary" | "destr
 }
 
 export default function Dashboard() {
+  const isMobile = useIsMobile();
+  const { sidebarCollapsed } = useUIStore();
+  const contentLeft = getSidebarOffset(sidebarCollapsed, isMobile);
   const [activeTab, setActiveTab] = useState("home");
   const [selectedInsight, setSelectedInsight] = useState<InsightType>(null);
   const [selectedDeveloperId, setSelectedDeveloperId] = useState<string | null>(null);
@@ -672,7 +677,10 @@ export default function Dashboard() {
 
       <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="relative z-10 pb-12 pl-[316px] pr-6 pt-[122px]">
+      <main
+        className="relative z-10 pb-12 pr-3 pt-[88px] sm:pr-6 sm:pt-[122px] transition-[padding-left] duration-300"
+        style={{ paddingLeft: isMobile ? 12 : contentLeft }}
+      >
         <div className="space-y-6">
           {/* — Top ticker + hero ——————————————— */}
           <div className="artemis-panel relative overflow-hidden rounded-[24px]">
