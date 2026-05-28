@@ -19,6 +19,7 @@ import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
 import { useIsMobile } from "@/ui/hooks/useIsMobile";
 import { cn } from "@/ui/lib/utils";
 import { ArtemisLogo, CosmicJourney, JourneyMilestone } from "@/ui/components/cosmic";
+import { BackToTop } from "@/ui/components/BackToTop";
 import { Button } from "@/ui/components/ui/button";
 
 /**
@@ -452,6 +453,8 @@ export default function HowWeDoIt() {
           </article>
         </div>
       </main>
+
+      <BackToTop />
     </div>
   );
 }
