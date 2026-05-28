@@ -16,6 +16,7 @@ import Landing from './pages/Landing';
 import Download from './pages/Download';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { CommandPaletteProvider } from './components/CommandPalette';
+import { SmoothScroll } from './components/SmoothScroll';
 
 function RootRoute() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -107,14 +108,16 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <DashboardProvider>
-          <CommandPaletteProvider>
-            <AppRoutes />
-            <ProgressToastContainer />
-          </CommandPaletteProvider>
-        </DashboardProvider>
-      </AuthProvider>
+      <SmoothScroll>
+        <AuthProvider>
+          <DashboardProvider>
+            <CommandPaletteProvider>
+              <AppRoutes />
+              <ProgressToastContainer />
+            </CommandPaletteProvider>
+          </DashboardProvider>
+        </AuthProvider>
+      </SmoothScroll>
     </BrowserRouter>
   );
 }
