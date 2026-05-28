@@ -5,7 +5,7 @@ import { useDashboard } from "@/ui/contexts/DashboardContext";
 import { useAuth } from "@/ui/contexts/AuthContext";
 import { apiService } from "@/ui/services/api.service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/components/ui/avatar";
-import { Plus, Trash2, Users, Check, X, UserPlus, Search, Shield, ChevronRight, GitCommit, GitPullRequest, GitMerge, Eye, Pencil, MoreHorizontal, GripVertical } from "lucide-react";
+import { Plus, Trash2, Users, Check, X, UserPlus, Search, Shield, ChevronLeft, ChevronRight, GitCommit, GitPullRequest, GitMerge, Eye, Pencil, MoreHorizontal, GripVertical } from "lucide-react";
 import { Input } from "@/ui/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
@@ -346,11 +346,13 @@ const Squads = () => {
       <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
       <main
-        className="flex-1 flex overflow-hidden pr-6 md:pr-10 pt-[148px] pb-8 relative z-10 gap-4 transition-[padding-left] duration-300"
-        style={{ paddingLeft: contentLeft + 16 }}
+        className="flex-1 flex flex-col md:flex-row overflow-hidden pr-3 sm:pr-6 md:pr-10 pt-[88px] sm:pt-[148px] pb-8 relative z-10 gap-4 transition-[padding-left] duration-300"
+        style={{ paddingLeft: isMobile ? 12 : contentLeft + 16 }}
       >
         {/* ─── Sidebar ─── */}
-        <div className="w-[264px] shrink-0 flex flex-col gap-3">
+        <div
+          className={`${isMobile && selectedSquad ? "hidden" : "flex"} w-full md:w-[264px] md:flex shrink-0 flex-col gap-3`}
+        >
           {/* Label + new squad button + reorder toggle */}
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
@@ -671,7 +673,20 @@ const Squads = () => {
         </div>
 
         {/* ─── Main content ─── */}
-        <div className="flex-1 min-w-0 overflow-hidden rounded-2xl border border-border/40 bg-card/30 backdrop-blur-2xl flex flex-col">
+        <div
+          className={`${isMobile && !selectedSquad ? "hidden" : "flex"} flex-1 min-w-0 overflow-hidden rounded-2xl border border-border/40 bg-card/30 backdrop-blur-2xl flex-col`}
+        >
+          {/* Mobile-only back-to-list bar */}
+          {isMobile && selectedSquad && (
+            <button
+              type="button"
+              onClick={() => setSelectedSquadId(null)}
+              className="flex items-center gap-1.5 border-b border-border/40 px-4 py-2.5 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              All squads
+            </button>
+          )}
           <AnimatePresence mode="wait">
             {selectedSquad ? (
               <motion.div
