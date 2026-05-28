@@ -53,7 +53,7 @@ export default function HowWeDoIt() {
   );
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden text-foreground">
+    <div className="min-h-screen bg-background relative overflow-x-clip text-foreground">
       {/* Decorative backdrop */}
       <div className="pointer-events-none absolute inset-0">
         <div
