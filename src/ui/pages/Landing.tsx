@@ -125,12 +125,7 @@ const Landing = () => {
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="mx-auto max-w-4xl text-center"
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-border/40 bg-card/40 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(258_92%_70%/0.9)]" />
-              Mission control for engineering
-            </span>
-
-            <h1 className="mt-8 font-display text-[clamp(2.8rem,7vw,6rem)] font-light leading-[0.95] tracking-[-0.04em]">
+            <h1 className="font-display text-[clamp(2.8rem,7vw,6rem)] font-light leading-[0.95] tracking-[-0.04em]">
               <span className="artemis-text-lunar">Ship engineering</span>
               <br />
               <span className="artemis-text-aurora">signal, not noise.</span>
@@ -163,130 +158,6 @@ const Landing = () => {
             </p>
           </motion.div>
 
-          {/* Showcase card */}
-          <motion.div
-            initial={{ opacity: 0, y: 36, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1.1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="relative mx-auto mt-20 max-w-5xl"
-          >
-            <div
-              aria-hidden
-              className="absolute -inset-4 rounded-[40px] opacity-30 blur-3xl"
-              style={{
-                background:
-                  "linear-gradient(135deg, hsl(262 88% 68% / 0.45), hsl(232 78% 64% / 0.35) 50%, hsl(320 76% 70% / 0.25))",
-              }}
-            />
-            <div className="artemis-panel relative overflow-hidden rounded-[28px] p-6 sm:p-8">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
-              />
-
-              {/* Mock browser chrome */}
-              <div className="mb-6 flex items-center gap-2 border-b border-border/30 pb-4">
-                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />
-                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />
-                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />
-                <span className="ml-4 text-[11px] text-muted-foreground/60">
-                  artemis-app.vercel.app/dashboard
-                </span>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr]">
-                {/* Left: stats + bar */}
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    This week · all squads
-                  </p>
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    {[
-                      { k: "Commits", v: "1,284", d: "+8%" },
-                      { k: "PRs merged", v: "186", d: "+12%" },
-                      { k: "Reviews", v: "412", d: "−3%" },
-                    ].map((item) => (
-                      <div
-                        key={item.k}
-                        className="rounded-xl border border-border/40 bg-card/40 px-3 py-3"
-                      >
-                        <dt className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                          {item.k}
-                        </dt>
-                        <dd className="mt-1 font-display text-lg text-foreground">
-                          {item.v}
-                        </dd>
-                        <dd
-                          className={`mt-0.5 text-[10px] ${
-                            item.d.startsWith("+")
-                              ? "text-emerald-400/90"
-                              : "text-rose-400/90"
-                          }`}
-                        >
-                          {item.d} vs last week
-                        </dd>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Mini bar chart */}
-                  <div className="mt-6 flex h-24 items-end gap-1.5">
-                    {[34, 56, 42, 78, 65, 88, 72].map((h, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-t-md bg-gradient-to-t from-primary/30 to-primary/70"
-                        style={{ height: `${h}%` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-2 flex justify-between text-[10px] text-muted-foreground/60">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
-                      (d) => (
-                        <span key={d}>{d}</span>
-                      ),
-                    )}
-                  </div>
-                </div>
-
-                {/* Right: squad list */}
-                <div className="rounded-2xl border border-border/30 bg-card/30 p-4">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    Squad rhythm
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {[
-                      { name: "core-api", trend: "+12% velocity", tone: "good" },
-                      {
-                        name: "web-platform",
-                        trend: "−4% complexity",
-                        tone: "good",
-                      },
-                      { name: "data-pipelines", trend: "Stable", tone: "neutral" },
-                      { name: "growth", trend: "Review backlog", tone: "warn" },
-                    ].map((s) => (
-                      <div
-                        key={s.name}
-                        className="flex items-center justify-between rounded-lg border border-border/20 bg-background/30 px-3 py-2.5"
-                      >
-                        <span className="text-sm font-medium">{s.name}</span>
-                        <span
-                          className={`text-[11px] ${
-                            s.tone === "good"
-                              ? "text-emerald-400/85"
-                              : s.tone === "warn"
-                                ? "text-amber-400/85"
-                                : "text-muted-foreground"
-                          }`}
-                        >
-                          {s.trend}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </section>
 
         {/* Three pillars */}
