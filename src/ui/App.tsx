@@ -13,6 +13,7 @@ import ComplexityDashboard from './pages/ComplexityDashboard';
 import SquadXRayView from './pages/SquadXRayView';
 import HowWeDoIt from './pages/HowWeDoIt';
 import Landing from './pages/Landing';
+import Download from './pages/Download';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { CommandPaletteProvider } from './components/CommandPalette';
 
@@ -30,6 +31,7 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<RootRoute />} />
       <Route path="/how-we-do-it" element={<HowWeDoIt />} />
+      <Route path="/download" element={<Download />} />
       <Route
         path="/login"
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}

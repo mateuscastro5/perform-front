@@ -16,8 +16,6 @@ import {
 import { Button } from "@/ui/components/ui/button";
 import { ArtemisLogo, StarField } from "@/ui/components/cosmic";
 
-const DOWNLOAD_URL = import.meta.env.VITE_DOWNLOAD_URL ?? "#";
-
 const PILLARS = [
   {
     icon: Zap,
@@ -152,10 +150,10 @@ const Landing = () => {
                 </Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer">
+                <Link to="/download">
                   <Download className="h-4 w-4" />
                   Download for Desktop
-                </a>
+                </Link>
               </Button>
             </div>
 
@@ -511,10 +509,10 @@ const Landing = () => {
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-3 sm:flex-nowrap">
                 <Button asChild size="lg">
-                  <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer">
+                  <Link to="/download">
                     <Download className="h-4 w-4" />
-                    Download for Desktop
-                  </a>
+                    See downloads
+                  </Link>
                 </Button>
                 <Button asChild variant="ghost" size="lg">
                   <Link to="/login">Use the web app</Link>
@@ -539,14 +537,9 @@ const Landing = () => {
             <Link to="/login" className="transition-colors hover:text-foreground">
               Sign in
             </Link>
-            <a
-              href={DOWNLOAD_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="transition-colors hover:text-foreground"
-            >
+            <Link to="/download" className="transition-colors hover:text-foreground">
               Download
-            </a>
+            </Link>
             <a
               href="https://github.com/mateuscastro5/perform-front"
               target="_blank"
