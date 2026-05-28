@@ -1,4 +1,4 @@
-import { useState, useMemo, type ReactNode } from "react";
+import { useRef, useState, useMemo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -18,7 +18,7 @@ import { useAuth } from "@/ui/contexts/AuthContext";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
 import { useIsMobile } from "@/ui/hooks/useIsMobile";
 import { cn } from "@/ui/lib/utils";
-import { ArtemisLogo } from "@/ui/components/cosmic";
+import { ArtemisLogo, CosmicJourney, JourneyMilestone } from "@/ui/components/cosmic";
 import { Button } from "@/ui/components/ui/button";
 
 /**
@@ -35,6 +35,7 @@ export default function HowWeDoIt() {
   const { sidebarCollapsed } = useUIStore();
   const isMobile = useIsMobile();
   const contentLeft = isAuthenticated ? getSidebarOffset(sidebarCollapsed, isMobile) : 0;
+  const journeyRef = useRef<HTMLDivElement>(null);
 
   // Sticky-TOC active section state, updated on click.
   const [section, setSection] = useState<string>("philosophy");
@@ -55,7 +56,10 @@ export default function HowWeDoIt() {
   );
 
   return (
-    <div className="min-h-screen bg-background relative overflow-x-clip text-foreground">
+    <div
+      ref={journeyRef}
+      className="min-h-screen bg-background relative overflow-x-clip text-foreground"
+    >
       {/* Decorative backdrop */}
       <div className="pointer-events-none absolute inset-0">
         <div
@@ -72,6 +76,13 @@ export default function HowWeDoIt() {
               "radial-gradient(circle at 50% 50%, hsl(232 78% 64% / 0.08) 0%, transparent 60%)",
           }}
         />
+      </div>
+
+      {/* Cosmic journey — constellations + parallax stars + comets that
+          progress as the reader scrolls down. Fixed to the viewport so
+          the canvas never has to grow to article length. */}
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-90">
+        <CosmicJourney targetRef={journeyRef} className="absolute inset-0" />
       </div>
 
       {isAuthenticated ? (
@@ -210,6 +221,10 @@ export default function HowWeDoIt() {
               </Note>
             </Section>
 
+            <div className="my-4 flex justify-end opacity-70">
+              <JourneyMilestone variant="ringed" side="right" className="-mr-6 lg:-mr-12" />
+            </div>
+
             {/* ── Section: Velocity ── */}
             <Section id="velocity" eyebrow="03 · Velocity" title="Velocity is a delta, not a count">
               <p>
@@ -325,6 +340,10 @@ export default function HowWeDoIt() {
               </Caveat>
             </Section>
 
+            <div className="my-4 flex justify-start opacity-70">
+              <JourneyMilestone variant="binary" side="left" className="-ml-6 lg:-ml-12" />
+            </div>
+
             {/* ── Section: Review pressure ── */}
             <Section id="review" eyebrow="06 · Review pressure" title="Where bottlenecks actually hide">
               <p>
@@ -362,6 +381,10 @@ export default function HowWeDoIt() {
                 cheapest metric to game and the noisiest signal of value.
               </Caveat>
             </Section>
+
+            <div className="my-4 flex justify-end opacity-70">
+              <JourneyMilestone variant="nebula" side="right" className="-mr-6 lg:-mr-12" />
+            </div>
 
             {/* ── Section: AI ── */}
             <Section id="ai" eyebrow="08 · Where AI fits in" title="AI is a co-pilot, not the pilot">
