@@ -1,4 +1,5 @@
 import { useState, useMemo, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -13,8 +14,11 @@ import {
   Users,
 } from "lucide-react";
 import { DashboardHeader } from "@/ui/components/DashboardHeader";
+import { useAuth } from "@/ui/contexts/AuthContext";
 import { useUIStore, getSidebarOffset } from "@/ui/stores/uiStore";
 import { cn } from "@/ui/lib/utils";
+import { ArtemisLogo } from "@/ui/components/cosmic";
+import { Button } from "@/ui/components/ui/button";
 
 /**
  * Public-facing methodology / "manual of intelligence" page.
@@ -26,8 +30,9 @@ import { cn } from "@/ui/lib/utils";
  */
 export default function HowWeDoIt() {
   const [activeTab, setActiveTab] = useState("how");
+  const { isAuthenticated } = useAuth();
   const { sidebarCollapsed } = useUIStore();
-  const contentLeft = getSidebarOffset(sidebarCollapsed);
+  const contentLeft = isAuthenticated ? getSidebarOffset(sidebarCollapsed) : 0;
 
   // Sticky-TOC active section state, updated on click.
   const [section, setSection] = useState<string>("philosophy");
@@ -67,16 +72,35 @@ export default function HowWeDoIt() {
         />
       </div>
 
-      <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
+      {isAuthenticated ? (
+        <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
+      ) : (
+        <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-12">
+          <Link to="/" aria-label="Artemis home">
+            <ArtemisLogo />
+          </Link>
+          <nav className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/login">Sign in</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/">Back to home</Link>
+            </Button>
+          </nav>
+        </header>
+      )}
 
       <main
-        className="relative z-10 pr-6 md:pr-10 pt-[148px] pb-20 transition-[padding-left] duration-300"
+        className={cn(
+          "relative z-10 pr-6 md:pr-10 pb-20 transition-[padding-left] duration-300",
+          isAuthenticated ? "pt-[148px]" : "pt-8",
+        )}
         style={{ paddingLeft: contentLeft + 16 }}
       >
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10 lg:gap-14">
           {/* ── Sticky Table of Contents ── */}
           <aside className="hidden lg:block">
-            <div className="sticky top-[160px] space-y-1">
+            <div className={cn("sticky space-y-1", isAuthenticated ? "top-[160px]" : "top-24")}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/60 px-2 mb-3">
                 Contents
               </p>
@@ -90,7 +114,7 @@ export default function HowWeDoIt() {
                     const el = document.getElementById(item.id);
                     if (el) {
                       // Account for the floating header (~ top:24 + 8 + 66 = 98) + breathing room
-                      const HEADER_OFFSET = 130;
+                      const HEADER_OFFSET = isAuthenticated ? 130 : 32;
                       const target =
                         el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
                       window.scrollTo({ top: target, behavior: "smooth" });
