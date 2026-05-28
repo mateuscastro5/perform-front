@@ -1,9 +1,17 @@
+import { useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type Variants,
+} from "framer-motion";
 import {
   ArrowRight,
   Brain,
   Check,
+  ChevronDown,
   Download,
   GaugeCircle,
   Github,
@@ -15,6 +23,33 @@ import {
 
 import { Button } from "@/ui/components/ui/button";
 import { ArtemisLogo, StarField } from "@/ui/components/cosmic";
+
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
+const sectionReveal: Variants = {
+  hidden: { opacity: 0, y: 36 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.95, ease: EASE_OUT_EXPO },
+  },
+};
+
+const cardGrid: Variants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.1, delayChildren: 0.08 },
+  },
+};
+
+const cardItem: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: EASE_OUT_EXPO },
+  },
+};
 
 const PILLARS = [
   {
@@ -56,15 +91,46 @@ const STEPS = [
 ];
 
 const Landing = () => {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const prefersReduced = useReducedMotion();
+
+  // Parallax: backdrop halos drift slower than content while scrolling.
+  const { scrollYProgress } = useScroll({
+    target: rootRef,
+    offset: ["start start", "end start"],
+  });
+  const haloLeftY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    prefersReduced ? ["0%", "0%"] : ["0%", "-32%"],
+  );
+  const haloRightY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    prefersReduced ? ["0%", "0%"] : ["0%", "-46%"],
+  );
+  const starsY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    prefersReduced ? ["0%", "0%"] : ["0%", "-14%"],
+  );
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.18], [1, 0]);
+  const scrollHintOpacity = useTransform(scrollYProgress, [0, 0.06], [1, 0]);
+
   return (
-    <div className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
-      {/* Backdrop — cosmic but quiet */}
+    <div
+      ref={rootRef}
+      className="relative isolate min-h-screen overflow-x-clip bg-background text-foreground"
+    >
+      {/* Backdrop — cosmic but quiet, with parallax */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <StarField className="absolute inset-0 opacity-25" density={0.4} />
-        <div
+        <motion.div style={{ y: starsY }} className="absolute inset-0">
+          <StarField className="absolute inset-0 opacity-25" density={0.4} />
+        </motion.div>
+        <motion.div
           aria-hidden
-          className="absolute"
           style={{
+            y: haloLeftY,
             width: "920px",
             height: "920px",
             top: "-340px",
@@ -74,11 +140,12 @@ const Landing = () => {
               "radial-gradient(circle at 50% 50%, hsl(262 95% 70% / 0.10) 0%, hsl(232 85% 60% / 0.05) 38%, transparent 68%)",
             filter: "blur(40px)",
           }}
+          className="absolute"
         />
-        <div
+        <motion.div
           aria-hidden
-          className="absolute animate-[artemis-float_22s_ease-in-out_infinite]"
           style={{
+            y: haloRightY,
             width: "560px",
             height: "560px",
             top: "-180px",
@@ -88,6 +155,7 @@ const Landing = () => {
             boxShadow:
               "0 0 70px hsl(320 95% 70% / 0.18), 0 0 140px hsl(320 90% 65% / 0.08)",
           }}
+          className="absolute animate-[artemis-float_22s_ease-in-out_infinite]"
         />
       </div>
 
@@ -118,26 +186,39 @@ const Landing = () => {
 
       {/* Hero */}
       <main className="relative z-10">
-        <section className="mx-auto w-full max-w-7xl px-6 pb-24 pt-12 lg:px-12 lg:pb-32 lg:pt-20">
+        <section className="relative mx-auto flex min-h-[calc(100vh-7rem)] w-full max-w-7xl flex-col justify-center px-6 pb-40 pt-16 lg:px-12 lg:pb-56 lg:pt-24">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            style={{ opacity: heroOpacity }}
             className="mx-auto max-w-4xl text-center"
           >
-            <h1 className="font-display text-[clamp(2.8rem,7vw,6rem)] font-light leading-[0.95] tracking-[-0.04em]">
+            <motion.h1
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, ease: EASE_OUT_EXPO }}
+              className="font-display text-[clamp(2.8rem,7vw,6rem)] font-light leading-[0.95] tracking-[-0.04em]"
+            >
               <span className="artemis-text-lunar">Ship engineering</span>
               <br />
               <span className="artemis-text-aurora">signal, not noise.</span>
-            </h1>
+            </motion.h1>
 
-            <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, delay: 0.12, ease: EASE_OUT_EXPO }}
+              className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
+            >
               Artemis turns raw GitHub events into honest signal — velocity,
               complexity, and team health — without vanity metrics or black
               boxes.
-            </p>
+            </motion.p>
 
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.24, ease: EASE_OUT_EXPO }}
+              className="mt-10 flex flex-wrap items-center justify-center gap-3"
+            >
               <Button asChild size="lg" className="group">
                 <Link to="/login">
                   Sign in
@@ -150,18 +231,46 @@ const Landing = () => {
                   Download for Desktop
                 </Link>
               </Button>
-            </div>
+            </motion.div>
 
-            <p className="mt-5 text-xs text-muted-foreground/70">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="mt-5 text-xs text-muted-foreground/70"
+            >
               Free during beta · Available on the web and as a native Windows
               app
-            </p>
+            </motion.p>
           </motion.div>
 
+          {/* Scroll hint */}
+          <motion.div
+            style={{ opacity: scrollHintOpacity }}
+            className="pointer-events-none absolute inset-x-0 bottom-10 flex flex-col items-center gap-2 text-muted-foreground/55"
+            aria-hidden
+          >
+            <span className="text-[10px] uppercase tracking-[0.28em]">
+              Scroll
+            </span>
+            <motion.span
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-border/50"
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </motion.span>
+          </motion.div>
         </section>
 
         {/* Three pillars */}
-        <section className="mx-auto w-full max-w-7xl px-6 py-24 lg:px-12">
+        <motion.section
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-120px" }}
+          className="mx-auto w-full max-w-7xl px-6 py-24 lg:px-12 lg:py-32"
+        >
           <div className="mb-12 max-w-2xl">
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               Built around three signals
@@ -178,11 +287,20 @@ const Landing = () => {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <motion.div
+            variants={cardGrid}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            className="grid gap-4 md:grid-cols-3"
+          >
             {PILLARS.map((p) => (
-              <div
+              <motion.div
                 key={p.title}
-                className="group rounded-2xl border border-border/40 bg-card/30 p-6 backdrop-blur-md transition-colors hover:border-border/70"
+                variants={cardItem}
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
+                className="group rounded-2xl border border-border/40 bg-card/30 p-6 backdrop-blur-md transition-colors hover:border-primary/40"
               >
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-primary/40 bg-primary/10 text-primary">
                   <p.icon className="h-5 w-5" />
@@ -191,18 +309,24 @@ const Landing = () => {
                 <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
                   {p.body}
                 </p>
-              </div>
+              </motion.div>
             ))}
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
 
         {/* How it works */}
-        <section className="relative">
+        <motion.section
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-120px" }}
+          className="relative"
+        >
           <div
             aria-hidden
             className="absolute inset-x-0 top-1/2 -z-10 h-[1px] -translate-y-1/2 bg-gradient-to-r from-transparent via-border to-transparent"
           />
-          <div className="mx-auto w-full max-w-7xl px-6 py-24 lg:px-12">
+          <div className="mx-auto w-full max-w-7xl px-6 py-24 lg:px-12 lg:py-32">
             <div className="mb-14 max-w-2xl">
               <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                 How it works
@@ -214,10 +338,19 @@ const Landing = () => {
               </h2>
             </div>
 
-            <ol className="grid gap-6 md:grid-cols-3">
+            <motion.ol
+              variants={cardGrid}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-80px" }}
+              className="grid gap-6 md:grid-cols-3"
+            >
               {STEPS.map((s) => (
-                <li
+                <motion.li
                   key={s.n}
+                  variants={cardItem}
+                  whileHover={{ y: -4 }}
+                  transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
                   className="relative rounded-2xl border border-border/30 bg-card/20 p-6"
                 >
                   <span className="font-mono text-xs text-primary/80">
@@ -227,9 +360,9 @@ const Landing = () => {
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     {s.body}
                   </p>
-                </li>
+                </motion.li>
               ))}
-            </ol>
+            </motion.ol>
 
             <div className="mt-10">
               <Button asChild variant="ghost" size="sm" className="group">
@@ -240,10 +373,16 @@ const Landing = () => {
               </Button>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* AI / methodology card */}
-        <section className="mx-auto w-full max-w-7xl px-6 py-24 lg:px-12">
+        <motion.section
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-120px" }}
+          className="mx-auto w-full max-w-7xl px-6 py-24 lg:px-12 lg:py-32"
+        >
           <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 lg:items-center">
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -348,10 +487,16 @@ const Landing = () => {
               </div>
             </motion.div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Desktop CTA */}
-        <section className="mx-auto w-full max-w-7xl px-6 pb-24 lg:px-12">
+        <motion.section
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-120px" }}
+          className="mx-auto w-full max-w-7xl px-6 pb-24 lg:px-12 lg:pb-32"
+        >
           <div className="artemis-panel relative overflow-hidden rounded-[28px] p-8 sm:p-12">
             <div
               aria-hidden
@@ -391,7 +536,7 @@ const Landing = () => {
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
       </main>
 
       {/* Footer */}
